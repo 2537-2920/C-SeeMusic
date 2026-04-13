@@ -1,0 +1,301 @@
+﻿<Window x:Class="SeeMusicApp.SingingEvaluationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="歌唱评估 - SeeMusic" Height="850" Width="1300"
+        WindowStartupLocation="CenterScreen" 
+        WindowStyle="None" AllowsTransparency="True"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Window.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#fdfbfb" Offset="0"/>
+            <GradientStop Color="#ebedee" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Background>
+
+    <Window.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="BorderBrush" Value="#F1F5F9"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="25"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" Opacity="0.03" BlurRadius="25" ShadowDepth="10"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ActionBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="#457b9d"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Padding" Value="0,15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="12">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.9"/>
+                    <Setter Property="RenderTransform">
+                        <Setter.Value>
+                            <ScaleTransform ScaleX="1.01" ScaleY="1.01" CenterX="200" CenterY="20"/>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#CCFFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="24,12" Panel.ZIndex="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+
+                    <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnGoHome_Click" ToolTip="返回主界面">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="Transparent">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border x:Name="LogoIcon" Width="32" Height="32" Background="#457b9d" CornerRadius="4" RenderTransformOrigin="0.5,0.5">
+                                            <Border.RenderTransform>
+                                                <TransformGroup>
+                                                    <RotateTransform Angle="0"/>
+                                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                                </TransformGroup>
+                                            </Border.RenderTransform>
+                                            <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"/>
+                                        </Border>
+                                        <TextBlock Text="SeeMusic" FontWeight="Bold" FontSize="20" Foreground="#1d3557" Margin="10,0,5,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Trigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(RotateTransform.Angle)" To="12" Duration="0:0:0.2"/>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleX)" To="1.1" Duration="0:0:0.2"/>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleY)" To="1.1" Duration="0:0:0.2"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.EnterActions>
+                                        <Trigger.ExitActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(RotateTransform.Angle)" To="0" Duration="0:0:0.2"/>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.2"/>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.2"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.ExitActions>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+
+                    <Line Y1="8" Y2="28" Stroke="#E2E8F0" StrokeThickness="1" Margin="15,0"/>
+                    <TextBlock Text="歌唱评估与 AI 变奏" FontWeight="Bold" FontSize="16" Foreground="#457b9d" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="当前日期：2026-04-08" Foreground="#999" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                    <Ellipse Width="32" Height="32" Fill="#E0F2FE" Stroke="#BAE6FD" StrokeThickness="1"/>
+                    <TextBlock Text="灵感创作者" FontWeight="Bold" FontSize="14" Foreground="#333" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="30">
+            <Grid Margin="20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,30">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,20">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE720;" FontFamily="Segoe MDL2 Assets" Foreground="#3B82F6" FontSize="20" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="上传演唱作品进行评估" FontWeight="Bold" FontSize="18" Foreground="#333" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="支持 MP4, MOV, MKV, MP3 格式" FontSize="12" Foreground="#AAA" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                            </Grid>
+
+                            <Grid Height="180" Margin="0,0,0,20" Cursor="Hand">
+                                <Rectangle Stroke="#D1D5DB" StrokeThickness="2" StrokeDashArray="4 4" RadiusX="16" RadiusY="16" Fill="#F9FAFB"/>
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets" FontSize="40" Foreground="#D1D5DB" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="点击或拖拽文件到此处" FontSize="14" Foreground="#6B7280" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="AI 将自动提取音频并分析音准与节奏" FontSize="12" Foreground="#9CA3AF" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Button x:Name="BtnStartEval" Style="{StaticResource ActionBtnStyle}" Content="开始智能检测" Margin="0,0,0,30" Click="BtnStartEval_Click"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                        <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" Foreground="#22C55E" FontSize="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="音准曲线分析" FontWeight="Bold" Foreground="#4B5563"/>
+                                    </StackPanel>
+
+                                    <Border Background="#F9FAFB" CornerRadius="8" Height="120" Margin="0,0,0,15" ClipToBounds="True">
+                                        <Canvas>
+                                            <Line X1="0" Y1="60" X2="1000" Y2="60" Stroke="#E5E7EB" StrokeThickness="2"/>
+
+                                            <Border Width="60" Height="4" Background="#457b9d" CornerRadius="2" Canvas.Left="10" Canvas.Top="65"/>
+                                            <Border Width="40" Height="4" Background="#EF4444" CornerRadius="2" Canvas.Left="80" Canvas.Top="45"/>
+                                            <Border Width="80" Height="4" Background="#457b9d" CornerRadius="2" Canvas.Left="130" Canvas.Top="60"/>
+                                            <Border Width="50" Height="4" Background="#EF4444" CornerRadius="2" Canvas.Left="230" Canvas.Top="75"/>
+                                            <Border Width="70" Height="4" Background="#457b9d" CornerRadius="2" Canvas.Left="290" Canvas.Top="58"/>
+
+                                            <TextBlock Text="红色区域表示音准偏移 > 20 cents" FontSize="10" Foreground="#9CA3AF" FontStyle="Italic" Canvas.Bottom="10" Canvas.Left="10"/>
+                                        </Canvas>
+                                    </Border>
+
+                                    <Border Background="#EFF6FF" CornerRadius="12" Padding="15">
+                                        <StackPanel>
+                                            <TextBlock Text="智能纠错建议" FontWeight="Bold" FontSize="12" Foreground="#1D4ED8" Margin="0,0,0,5"/>
+                                            <TextBlock Text="检测到在“副歌第一句”处存在半音偏高现象，建议练习时注意气息支撑，避免喉位过高。" FontSize="11" Foreground="#2563EB" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="综合评估报告" FontWeight="Bold" Foreground="#4B5563" Margin="0,0,0,15"/>
+
+                                    <Border Background="#F8FAFC" BorderBrush="#F1F5F9" BorderThickness="1" CornerRadius="16" Padding="20">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,20">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
+                                                    <TextBlock Text="88" FontSize="45" FontWeight="Bold" Foreground="#457b9d" BaselineOffset="35"/>
+                                                    <TextBlock Text="/ 100" FontSize="16" FontWeight="Bold" Foreground="#9CA3AF" Margin="5,0,0,8" VerticalAlignment="Bottom"/>
+                                                </StackPanel>
+                                                <Border Background="#DCFCE7" CornerRadius="10" Padding="10,4" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                                    <TextBlock Text="表现出色" FontSize="11" FontWeight="Bold" Foreground="#16A34A"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <TextBlock Text="音准准确度 (92%)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5"/>
+                                            <ProgressBar Value="92" Height="6" BorderThickness="0" Background="#E5E7EB" Foreground="#60A5FA" Margin="0,0,0,12"/>
+
+                                            <TextBlock Text="节奏稳定性 (85%)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5"/>
+                                            <ProgressBar Value="85" Height="6" BorderThickness="0" Background="#E5E7EB" Foreground="#FBBF24" Margin="0,0,0,12"/>
+
+                                            <TextBlock Text="情感表达 (88%)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5"/>
+                                            <ProgressBar Value="88" Height="6" BorderThickness="0" Background="#E5E7EB" Foreground="#C084FC" Margin="0,0,0,20"/>
+
+                                            <Button Background="White" BorderBrush="#457b9d" BorderThickness="1" Foreground="#457b9d" FontWeight="Bold" Padding="0,10" Cursor="Hand">
+                                                <Button.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="8"/>
+                                                    </Style>
+                                                </Button.Resources>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="导出完整 PDF 报告" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <Border Grid.Column="2" Style="{StaticResource CardStyle}" VerticalAlignment="Top">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <TextBlock Text="&#xE814;" FontFamily="Segoe MDL2 Assets" Foreground="#A855F7" FontSize="20" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="AI 智能变奏建议" FontWeight="Bold" FontSize="18" Foreground="#333" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="上传原唱参考 (可选)" FontSize="12" FontWeight="Bold" Foreground="#6B7280" Margin="0,0,0,10"/>
+                        <Grid Height="80" Cursor="Hand">
+                            <Rectangle Stroke="#E5E7EB" StrokeThickness="2" StrokeDashArray="4 4" RadiusX="12" RadiusY="12" Fill="#F9FAFB"/>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
+                                <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#D1D5DB" Margin="0,0,8,0"/>
+                                <TextBlock Text="点击上传伴奏" FontSize="12" Foreground="#9CA3AF" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Line X1="0" Y1="20" X2="500" Y2="20" Stroke="#F1F5F9" StrokeThickness="1" Margin="0,10,0,30"/>
+
+                        <Grid Margin="0,0,0,15">
+                            <TextBlock Text="推荐变奏方案" FontWeight="Bold" Foreground="#4B5563"/>
+                            <Border Background="#F3F4F6" CornerRadius="4" Padding="6,2" HorizontalAlignment="Right">
+                                <TextBlock Text="基于 AI 情感分析" FontSize="10" Foreground="#9CA3AF"/>
+                            </Border>
+                        </Grid>
+
+                        <Border Background="#FDF7FF" BorderBrush="#F3E8FF" BorderThickness="1" CornerRadius="16" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,8">
+                                    <TextBlock Text="爵士风格变奏" FontWeight="Bold" Foreground="#8E44AD"/>
+                                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" Foreground="#8E44AD" FontSize="18" HorizontalAlignment="Right" Cursor="Hand"/>
+                                </Grid>
+                                <TextBlock Text="在副歌部分加入切分音，并将部分长音改为颤音处理，增强慵懒与自由感。" FontSize="11" Foreground="#6B21A8" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <TextBlock Text="查看详细乐谱建议" FontSize="10" FontWeight="Bold" Foreground="#9333EA" Cursor="Hand" TextDecorations="Underline"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F0FFF4" BorderBrush="#DCFCE7" BorderThickness="1" CornerRadius="16" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,8">
+                                    <TextBlock Text="民谣简约变奏" FontWeight="Bold" Foreground="#27AE60"/>
+                                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" Foreground="#27AE60" FontSize="18" HorizontalAlignment="Right" Cursor="Hand"/>
+                                </Grid>
+                                <TextBlock Text="减弱背景伴奏，强调人声的清晰度与叙事感，结尾处可尝试降调渐弱处理。" FontSize="11" Foreground="#166534" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <TextBlock Text="查看详细乐谱建议" FontSize="10" FontWeight="Bold" Foreground="#16A34A" Cursor="Hand" TextDecorations="Underline"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#FFF9F0" BorderBrush="#FFEDD5" BorderThickness="1" CornerRadius="16" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,8">
+                                    <TextBlock Text="摇滚力量变奏" FontWeight="Bold" Foreground="#D35400"/>
+                                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" Foreground="#D35400" FontSize="18" HorizontalAlignment="Right" Cursor="Hand"/>
+                                </Grid>
+                                <TextBlock Text="增加真假声切换频率，提升高音区的爆发力，部分乐句可采用滑音过渡。" FontSize="11" Foreground="#C2410C" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <TextBlock Text="查看详细乐谱建议" FontSize="10" FontWeight="Bold" Foreground="#EA580C" Cursor="Hand" TextDecorations="Underline"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>

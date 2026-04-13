@@ -1,0 +1,355 @@
+﻿<Window x:Class="SeeMusicApp.CommunityWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="乐谱社区 - SeeMusic" Height="850" Width="1300"
+        WindowStartupLocation="CenterScreen" Background="#FAFAFA"
+        WindowStyle="None" AllowsTransparency="True"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Window.Resources>
+        <Style x:Key="AcrylicHeader" TargetType="Border">
+            <Setter Property="Background" Value="#E6FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#F1F5F9"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+
+        <Style x:Key="ScoreCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="BorderBrush" Value="#F8FAFC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <TranslateTransform Y="0"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" Opacity="0.02" BlurRadius="15" ShadowDepth="5"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" To="-8" Duration="0:0:0.2"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" To="0" Duration="0:0:0.2"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="FilterBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="BorderBrush" Value="#F1F5F9"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="20,8"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="20">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#A8DADC"/>
+                    <Setter Property="Foreground" Value="#457b9d"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ActiveFilterBtnStyle" TargetType="Button" BasedOn="{StaticResource FilterBtnStyle}">
+            <Setter Property="Background" Value="#1D3557"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#1D3557"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="70"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource AcrylicHeader}" Panel.ZIndex="10">
+            <Grid Margin="30,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnGoHome_Click" ToolTip="返回主界面">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="Transparent">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border x:Name="LogoIcon" Width="32" Height="32" Background="#457b9d" CornerRadius="4" RenderTransformOrigin="0.5,0.5">
+                                            <Border.RenderTransform>
+                                                <TransformGroup>
+                                                    <RotateTransform Angle="0"/>
+                                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                                </TransformGroup>
+                                            </Border.RenderTransform>
+                                            <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"/>
+                                        </Border>
+                                        <TextBlock Text="SeeMusic" FontWeight="Bold" FontSize="20" Foreground="#1d3557" Margin="10,0,5,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Trigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(RotateTransform.Angle)" To="12" Duration="0:0:0.2"/>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleX)" To="1.1" Duration="0:0:0.2"/>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleY)" To="1.1" Duration="0:0:0.2"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.EnterActions>
+                                        <Trigger.ExitActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(RotateTransform.Angle)" To="0" Duration="0:0:0.2"/>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.2"/>
+                                                    <DoubleAnimation Storyboard.TargetName="LogoIcon" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.2"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.ExitActions>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Line Y1="10" Y2="30" Stroke="#E2E8F0" StrokeThickness="1" Margin="15,0"/>
+                    <TextBlock Text="社区" FontWeight="Bold" FontSize="16" Foreground="#457b9d" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Border Grid.Column="1" MaxWidth="500" Background="#F1F5F9" CornerRadius="20" Padding="15,8" Margin="40,0">
+                    <Grid>
+                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="#94A3B8" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBox Background="Transparent" BorderThickness="0" Foreground="#333" FontSize="14" Margin="25,0,0,0" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
+                        <TextBlock Text="搜索你想要的乐谱..." Foreground="#94A3B8" FontSize="14" Margin="25,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" x:Name="SearchPlaceholder"/>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Background="#1D3557" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="20,8" Margin="0,0,20,0" Cursor="Hand" Click="BtnUpload_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="20"/>
+                            </Style>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="上传乐谱" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Ellipse Width="36" Height="36" Fill="#A8DADC" Stroke="White" StrokeThickness="2">
+                        <Ellipse.Effect>
+                            <DropShadowEffect BlurRadius="5" Opacity="0.1" ShadowDepth="2"/>
+                        </Ellipse.Effect>
+                    </Ellipse>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="30">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0" Margin="0,0,20,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,20">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource ActiveFilterBtnStyle}" Content="精选" Margin="0,0,15,0"/>
+                        <Button Style="{StaticResource FilterBtnStyle}" Content="流行" Margin="0,0,15,0"/>
+                        <Button Style="{StaticResource FilterBtnStyle}" Content="古典" Margin="0,0,15,0"/>
+                        <Button Style="{StaticResource FilterBtnStyle}" Content="爵士" Margin="0,0,15,0"/>
+                        <Button Style="{StaticResource FilterBtnStyle}" Content="ACG" Margin="0,0,15,0"/>
+                        <Button Style="{StaticResource FilterBtnStyle}" Content="指弹吉他" Margin="0,0,15,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <WrapPanel Margin="0,0,0,30">
+                        <Border Style="{StaticResource ScoreCardStyle}" Width="210" Margin="0,0,20,20" MouseLeftButtonDown="ScoreCard_Click" Tag="晴天|周杰伦|¥6.00|钢琴版">
+                            <StackPanel>
+                                <Border Height="200" Background="#F1F5F9" CornerRadius="12" Margin="0,0,0,15" ClipToBounds="True">
+                                    <TextBlock Text="QT" FontSize="50" FontWeight="Bold" Foreground="#CBD5E1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="晴天" FontWeight="Bold" FontSize="18" Foreground="#1E293B"/>
+                                <TextBlock Text="周杰伦 · 钢琴版" FontSize="12" Foreground="#94A3B8" Margin="0,5,0,15"/>
+                                <Grid>
+                                    <TextBlock Text="¥6.00" FontWeight="Bold" Foreground="#457b9d"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                        <TextBlock Text="1.2k" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource ScoreCardStyle}" Width="210" Margin="0,0,20,20" MouseLeftButtonDown="ScoreCard_Click" Tag="G线上的咏叹调|巴赫|免费|小提琴">
+                            <StackPanel>
+                                <Border Height="200" Background="#F1F5F9" CornerRadius="12" Margin="0,0,0,15" ClipToBounds="True">
+                                    <TextBlock Text="Bach" FontSize="40" FontWeight="Bold" Foreground="#CBD5E1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="G线上的咏叹调" FontWeight="Bold" FontSize="18" Foreground="#1E293B"/>
+                                <TextBlock Text="巴赫 · 小提琴" FontSize="12" Foreground="#94A3B8" Margin="0,5,0,15"/>
+                                <Grid>
+                                    <TextBlock Text="免费" FontWeight="Bold" Foreground="#22C55E"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                        <TextBlock Text="856" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource ScoreCardStyle}" Width="210" Margin="0,0,20,20" MouseLeftButtonDown="ScoreCard_Click" Tag="那些年|胡夏|¥5.00|简易钢琴">
+                            <StackPanel>
+                                <Border Height="200" Background="#F1F5F9" CornerRadius="12" Margin="0,0,0,15" ClipToBounds="True">
+                                    <TextBlock Text="TY" FontSize="50" FontWeight="Bold" Foreground="#CBD5E1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="那些年" FontWeight="Bold" FontSize="18" Foreground="#1E293B"/>
+                                <TextBlock Text="胡夏 · 简易钢琴" FontSize="12" Foreground="#94A3B8" Margin="0,5,0,15"/>
+                                <Grid>
+                                    <TextBlock Text="¥5.00" FontWeight="Bold" Foreground="#457b9d"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                        <TextBlock Text="2.3k" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <Border Grid.Column="1" Width="380" Background="White" CornerRadius="32" Padding="30" BorderBrush="#F1F5F9" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.05" BlurRadius="30" ShadowDepth="0"/>
+                </Border.Effect>
+                <Grid>
+                    <StackPanel x:Name="DetailEmptyState" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE189;" FontFamily="Segoe MDL2 Assets" FontSize="60" Foreground="#F1F5F9" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                        <TextBlock Text="选择一份乐谱查看详情" Foreground="#94A3B8" FontSize="14" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="DetailContentState" Visibility="Collapsed">
+                        <Grid Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock x:Name="DetailTitle" Text="晴天" FontSize="24" FontWeight="Bold" Foreground="#1E293B"/>
+                                <TextBlock x:Name="DetailAuthor" Text="周杰伦" FontSize="14" Foreground="#94A3B8" Margin="0,5,0,0"/>
+                            </StackPanel>
+                            <Button Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="Hand">
+                                <TextBlock Text="&#xEB52;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#CBD5E1"/>
+                            </Button>
+                        </Grid>
+
+                        <Border Height="250" Background="#F8FAFC" CornerRadius="16" Margin="0,0,0,25">
+                            <TextBlock x:Name="DetailCover" Text="QT" FontSize="80" FontWeight="Bold" Foreground="#E2E8F0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <Grid Margin="0,0,0,30">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="15"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Background="#457b9d" Foreground="White" FontWeight="Bold" FontSize="16" BorderThickness="0" Padding="0,15" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="16"/>
+                                    </Style>
+                                </Button.Resources>
+                                <TextBlock Text="立即下载"/>
+                            </Button>
+                            <Button Grid.Column="2" Background="#F8FAFC" BorderThickness="0" Width="55" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="16"/>
+                                    </Style>
+                                </Button.Resources>
+                                <TextBlock Text="&#xE72D;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#94A3B8"/>
+                            </Button>
+                        </Grid>
+
+                        <TextBlock Text="社区评论 (42)" FontWeight="Bold" FontSize="14" Margin="0,0,0,15"/>
+                        <ScrollViewer Height="180" VerticalScrollBarVisibility="Auto" Margin="0,0,0,15">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse Width="32" Height="32" Fill="#E2E8F0" VerticalAlignment="Top"/>
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="路德维希" FontWeight="Bold" FontSize="12" Foreground="#333"/>
+                                            <TextBlock Text="2小时前" FontSize="10" Foreground="#CBD5E1" Margin="10,2,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock Text="这首谱子转调处理得非常巧妙，值得学习！" FontSize="12" Foreground="#64748B" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse Width="32" Height="32" Fill="#E2E8F0" VerticalAlignment="Top"/>
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="琴心剑胆" FontWeight="Bold" FontSize="12" Foreground="#333"/>
+                                            <TextBlock Text="昨天" FontSize="10" Foreground="#CBD5E1" Margin="10,2,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock Text="感谢分享，找了好久这个版本的钢琴谱。" FontSize="12" Foreground="#64748B" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <Grid>
+                            <TextBox Background="#F8FAFC" BorderThickness="0" Padding="15,12" Foreground="#333" FontSize="12" VerticalContentAlignment="Center">
+                                <TextBox.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="12"/>
+                                    </Style>
+                                </TextBox.Resources>
+                            </TextBox>
+                            <TextBlock Text="我也说两句..." Foreground="#94A3B8" FontSize="12" Margin="15,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            <Button Background="Transparent" BorderThickness="0" Foreground="#457b9d" FontWeight="Bold" FontSize="12" HorizontalAlignment="Right" Margin="0,0,15,0" Cursor="Hand">
+                                <TextBlock Text="发送"/>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

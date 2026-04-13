@@ -1,0 +1,237 @@
+﻿<Window x:Class="SeeMusicApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SeeMusic - 灵感之声" Height="768" Width="1024"
+        WindowStartupLocation="CenterScreen" 
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Window.Resources>
+        <Style x:Key="AcrylicCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#A6FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#66FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1.5,1.5,0,0"/>
+            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <TranslateTransform Y="0"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#1F2687" Opacity="0.07" BlurRadius="32" ShadowDepth="8"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" To="-8" Duration="0:0:0.2"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" To="0" Duration="0:0:0.2"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#457b9d"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="25" Padding="40,12">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#457b9d" BlurRadius="20" ShadowDepth="10" Opacity="0.3"/>
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1d3557"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="AcrylicButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#A6FFFFFF"/>
+            <Setter Property="Foreground" Value="#1d3557"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="#80FFFFFF" BorderThickness="1" CornerRadius="25" Padding="40,12">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#D9FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="Path" x:Key="FlowingInkStyle">
+            <Setter Property="Stroke" Value="Black"/>
+            <Setter Property="StrokeDashArray" Value="500, 500"/>
+            <Style.Triggers>
+                <EventTrigger RoutedEvent="Loaded">
+                    <BeginStoryboard>
+                        <Storyboard RepeatBehavior="Forever">
+                            <DoubleAnimation Storyboard.TargetProperty="StrokeDashOffset" 
+                                             From="1000" To="0" Duration="0:0:20"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="12" ClipToBounds="True">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#fdfbfb" Offset="0"/>
+                <GradientStop Color="#ebedee" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.Background>
+
+        <Grid>
+            <Canvas Opacity="0.05">
+                <Line X1="0" Y1="100" X2="2000" Y2="100" Stroke="Black" StrokeThickness="2"/>
+                <Line X1="0" Y1="120" X2="2000" Y2="120" Stroke="Black" StrokeThickness="2"/>
+                <Line X1="0" Y1="140" X2="2000" Y2="140" Stroke="Black" StrokeThickness="2"/>
+                <Line X1="0" Y1="160" X2="2000" Y2="160" Stroke="Black" StrokeThickness="2"/>
+                <Line X1="0" Y1="180" X2="2000" Y2="180" Stroke="Black" StrokeThickness="2"/>
+            </Canvas>
+
+            <Canvas x:Name="DecorationCanvas" IsHitTestVisible="False"/>
+
+            <Viewbox Stretch="UniformToFill" IsHitTestVisible="False" VerticalAlignment="Center" Height="250" Opacity="0.8">
+                <Canvas Width="1000" Height="200">
+                    <Path Data="M -100,100 Q 150,20 400,100 T 1100,100" Style="{StaticResource FlowingInkStyle}" StrokeThickness="1.5" Opacity="0.6"/>
+                    <Path Data="M -100,110 Q 150,30 400,110 T 1100,110" Style="{StaticResource FlowingInkStyle}" StrokeThickness="1.2" Opacity="0.4" StrokeDashOffset="100"/>
+                    <Path Data="M -100,90 Q 150,10 400,90 T 1100,90" Style="{StaticResource FlowingInkStyle}" StrokeThickness="1" Opacity="0.3" StrokeDashOffset="250"/>
+                    <Path Data="M -100,120 Q 150,40 400,120 T 1100,120" Style="{StaticResource FlowingInkStyle}" StrokeThickness="0.8" Opacity="0.15" StrokeDashOffset="400"/>
+                    <Path Data="M -100,80 Q 150,0 400,80 T 1100,80" Style="{StaticResource FlowingInkStyle}" StrokeThickness="0.6" Opacity="0.1" StrokeDashOffset="600"/>
+                </Canvas>
+            </Viewbox>
+
+            <Button HorizontalAlignment="Right" VerticalAlignment="Top" Margin="15" Width="30" Height="30" 
+                    Background="Transparent" BorderThickness="0" FontSize="16" Foreground="#457b9d" 
+                    Click="BtnClose_Click" Cursor="Hand" Content="✕" ToolTip="退出系统"/>
+
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                <TextBlock Text="SeeMusic" FontSize="110" FontWeight="Bold" FontFamily="Segoe UI" HorizontalAlignment="Center" Margin="0,0,0,-10">
+                    <TextBlock.Foreground>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#000000" Offset="0.0"/>
+                            <GradientStop Color="#434343" Offset="0.5"/>
+                            <GradientStop Color="#000000" Offset="1.0"/>
+                        </LinearGradientBrush>
+                    </TextBlock.Foreground>
+                    <TextBlock.Effect>
+                        <DropShadowEffect BlurRadius="15" ShadowDepth="10" Opacity="0.1" />
+                    </TextBlock.Effect>
+                </TextBlock>
+                <TextBlock Text="让音乐触手可及 · To See The Sound" FontSize="20" Foreground="#66000000" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+
+                <Grid Width="800" Height="200">
+
+                    <StackPanel x:Name="LoggedOutView" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Visible">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                            <Button Style="{StaticResource AcrylicButtonStyle}" Margin="0,0,20,0" Click="BtnGoLogin_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="登 录"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Style="{StaticResource PrimaryButtonStyle}" Click="BtnGoRegister_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8FA;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="注 册"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                        <TextBlock Text="开启您的智能音乐创作之旅" FontStyle="Italic" Foreground="#999" HorizontalAlignment="Center" Margin="0,30,0,0"/>
+                    </StackPanel>
+
+                    <Grid x:Name="LoggedInView" Visibility="Collapsed">
+
+                        <Border Style="{StaticResource AcrylicCardStyle}" Width="150" Height="150" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="50,10,0,0" MouseLeftButtonDown="BtnGoTranscription_Click">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" FontSize="45" Foreground="#457b9d" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                <TextBlock Text="智能扒谱" FontWeight="Bold" FontSize="16" Foreground="#1d3557" HorizontalAlignment="Center"/>
+                                <TextBlock Text="AI TRANSCRIPTION" FontSize="10" Foreground="#888" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource AcrylicCardStyle}" Width="150" Height="150" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="230,0,0,10" MouseLeftButtonDown="BtnGoEvaluation_Click">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE720;" FontFamily="Segoe MDL2 Assets" FontSize="45" Foreground="#e63946" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                <TextBlock Text="歌唱评估" FontWeight="Bold" FontSize="16" Foreground="#1d3557" HorizontalAlignment="Center"/>
+                                <TextBlock Text="VOCAL ANALYSIS" FontSize="10" Foreground="#888" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource AcrylicCardStyle}" Width="150" Height="150" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,230,10" MouseLeftButtonDown="BtnGoCommunity_Click">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="45" Foreground="#457b9d" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                <TextBlock Text="乐谱社区" FontWeight="Bold" FontSize="16" Foreground="#1d3557" HorizontalAlignment="Center"/>
+                                <TextBlock Text="COMMUNITY" FontSize="10" Foreground="#888" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource AcrylicCardStyle}" Width="150" Height="150" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,50,0" MouseLeftButtonDown="BtnGoProfile_Click">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Ellipse Width="45" Height="45" Fill="#a8dadc" Stroke="White" StrokeThickness="2" Margin="0,0,0,10"/>
+                                <TextBlock Text="个人中心" FontWeight="Bold" FontSize="16" Foreground="#1d3557" HorizontalAlignment="Center"/>
+                                <TextBlock Text="USER CENTER" FontSize="10" Foreground="#888" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="欢迎回来，灵感创作者" Foreground="#457b9d" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-10"/>
+                    </Grid>
+
+                </Grid>
+            </StackPanel>
+
+            <Grid VerticalAlignment="Bottom" Margin="30">
+                <TextBlock Text="2026年04月02日 • Version 4.2.0-Alpha" Foreground="#999" FontSize="12" FontWeight="Bold" HorizontalAlignment="Left"/>
+                <TextBlock Text="© 2026 SeeMusic Studio. All Rights Reserved." Foreground="#999" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right"/>
+            </Grid>
+
+            <Border Background="#A6FFFFFF" CornerRadius="15" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,60,30,0" Padding="15" BorderBrush="#80FFFFFF" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.05" BlurRadius="15"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="演示控制面板" FontSize="10" FontWeight="Bold" Foreground="#888" Margin="0,0,0,10"/>
+                    <Button x:Name="BtnMockOut" Content="模拟未登录" Background="#457b9d" Foreground="White" BorderThickness="0" Padding="10,5" Margin="0,0,0,5" Click="BtnMockOut_Click" Cursor="Hand"/>
+                    <Button x:Name="BtnMockIn" Content="模拟已登录" Background="White" Foreground="#444" BorderBrush="#EEE" BorderThickness="1" Padding="10,5" Click="BtnMockIn_Click" Cursor="Hand"/>
+                </StackPanel>
+            </Border>
+
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SeeMusicApp", "SeeMusicApp.csproj", "{5EFD9082-1063-4E35-A0D9-6102B68FD56D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5EFD9082-1063-4E35-A0D9-6102B68FD56D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EFD9082-1063-4E35-A0D9-6102B68FD56D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EFD9082-1063-4E35-A0D9-6102B68FD56D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EFD9082-1063-4E35-A0D9-6102B68FD56D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FBCCED4A-B16F-4D74-A1AD-FBD1816E1EAA}
+	EndGlobalSection
+EndGlobal
