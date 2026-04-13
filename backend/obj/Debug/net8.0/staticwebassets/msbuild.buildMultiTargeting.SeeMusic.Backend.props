@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/SeeMusic.Backend.props" />
-</Project>

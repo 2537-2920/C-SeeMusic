@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Visual Studio / JetBrains
+.vs/
+.idea/
+*.user
+*.suo
+
+# Rider / ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+# Logs
+*.log
+
+# Local runtime data
+backend/uploads/
+
+# Environment-specific overrides
+.env
+.env.*
+appsettings.Local.json
+appsettings.*.Local.json

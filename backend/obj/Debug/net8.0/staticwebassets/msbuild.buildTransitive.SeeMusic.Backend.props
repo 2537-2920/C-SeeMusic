@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../buildMultiTargeting/SeeMusic.Backend.props" />
-</Project>

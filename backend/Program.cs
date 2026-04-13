@@ -8,9 +8,16 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var jwtSecret = builder.Configuration["Jwt:Secret"]
+    ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+if (jwtSecret.Length < 32)
+{
+    throw new InvalidOperationException("Jwt:Secret must be at least 32 characters.");
+}
+
 var jwtSettings = new JwtSettings
 {
-    Secret = builder.Configuration["Jwt:Secret"] ?? "your-secret-key-here-change-this-in-production",
+    Secret = jwtSecret,
     Issuer = builder.Configuration["Jwt:Issuer"] ?? "SeeMusic",
     Audience = builder.Configuration["Jwt:Audience"] ?? "SeeMusic",
     ExpiresInMinutes = int.Parse(builder.Configuration["Jwt:ExpiresInMinutes"] ?? "120"),
@@ -19,8 +26,8 @@ var jwtSettings = new JwtSettings
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton<JwtTokenProvider>();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Server=localhost;Port=3306;Database=seemusic;Uid=root;Pwd=your_password;";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
 
 builder.Services.AddDbContext<SeeMusicDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
@@ -71,4 +78,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
