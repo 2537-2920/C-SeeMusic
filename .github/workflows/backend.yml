@@ -92,13 +92,18 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Set up Docker metadata
+      id: meta
+      run: |
+        echo "registry_lowercase=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+    
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
       with:
         context: ./backend
         push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         tags: |
-          ghcr.io/${{ github.repository }}/backend:latest
-          ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+          ghcr.io/${{ steps.meta.outputs.registry_lowercase }}/backend:latest
+          ghcr.io/${{ steps.meta.outputs.registry_lowercase }}/backend:${{ github.sha }}
         labels: |
           org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
