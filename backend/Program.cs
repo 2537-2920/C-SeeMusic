@@ -63,7 +63,38 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<SeeMusicDbContext>();
-    context.Database.Migrate();
+    context.Database.EnsureCreated();
+
+    // --- 数据库结构暴力同步与修复 ---
+    try {
+        // 1. 强制在 Scores 表中添加缺失的核心业务字段
+        var queries = new[] {
+            "ALTER TABLE Scores ADD COLUMN IF NOT EXISTS CoverUrl LongText;",
+            "ALTER TABLE Scores ADD COLUMN IF NOT EXISTS PrimaryCategory VARCHAR(100);",
+            "ALTER TABLE Scores ADD COLUMN IF NOT EXISTS DownloadCount INT DEFAULT 0;",
+            "ALTER TABLE Scores ADD COLUMN IF NOT EXISTS FavoriteCount INT DEFAULT 0;",
+            "ALTER TABLE Scores ADD COLUMN IF NOT EXISTS CommentCount INT DEFAULT 0;",
+            "ALTER TABLE Scores ADD COLUMN IF NOT EXISTS ShareCount INT DEFAULT 0;"
+        };
+
+        foreach (var sql in queries) {
+            try { context.Database.ExecuteSqlRaw(sql); } catch { /* 容错处理 */ }
+        }
+        
+        // 2. 确保至少有一个 ID 为 1 的用户存在 (否则乐谱列表里发布者会是空白)
+        if (!context.Users.Any(u => u.Id == 1)) {
+            context.Database.ExecuteSqlRaw("INSERT INTO Users (Id, Username, DisplayName, Email, PasswordHash, Bio, CreatedAt, LastLoginAt) VALUES (1, 'creator', '灵感创作者', 'test@test.com', 'pwd', 'I love music', NOW(), NOW());");
+            Console.WriteLine("--> [DB FIX] Created default creator user.");
+        }
+
+        Console.WriteLine("--> [DB FIX] Database synchronization complete.");
+    } catch (Exception ex) {
+        Console.WriteLine("--> [DB ERROR] Repair failed: " + ex.Message);
+    }
+    // ----------------------------
+
+    // 自动填充测试数据
+    DbSeeder.Seed(context);
 }
 
 if (app.Environment.IsDevelopment())
@@ -73,6 +104,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(); 
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

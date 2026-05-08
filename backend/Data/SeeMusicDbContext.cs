@@ -8,6 +8,11 @@ public class SeeMusicDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<MediaFile> MediaFiles { get; set; }
+    public DbSet<Score> Scores { get; set; }
+    public DbSet<Category> Categories { get; set; }
+    public DbSet<ScoreCategoryRelation> ScoreCategoryRelations { get; set; }
+    public DbSet<Comment> Comments { get; set; }
+    public DbSet<Favorite> Favorites { get; set; }
 
     public SeeMusicDbContext(DbContextOptions<SeeMusicDbContext> options) : base(options)
     {
@@ -44,6 +49,41 @@ public class SeeMusicDbContext : DbContext
             entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
             entity.Property(e => e.Type).IsRequired().HasMaxLength(20);
             entity.HasIndex(e => e.MediaId).IsUnique();
+        });
+
+        modelBuilder.Entity<Score>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.HasOne(e => e.Owner)
+                .WithMany()
+                .HasForeignKey(e => e.OwnerUserId);
+        });
+
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.HasIndex(e => e.Slug).IsUnique();
+        });
+
+        modelBuilder.Entity<ScoreCategoryRelation>(entity =>
+        {
+            entity.HasKey(e => new { e.ScoreId, e.CategoryId });
+        });
+
+        modelBuilder.Entity<Comment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(1000);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId);
+        });
+
+        modelBuilder.Entity<Favorite>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.ScoreId });
         });
     }
 }

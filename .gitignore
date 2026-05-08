@@ -26,3 +26,10 @@ backend/uploads/
 .env.*
 appsettings.Local.json
 appsettings.*.Local.json
+
+# NuGet packages
+packages/
+**/packages/
+
+# Static files and uploads
+backend/wwwroot/

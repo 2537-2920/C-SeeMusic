@@ -2,6 +2,7 @@ using backend.Models;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
 using System.Security.Claims;
 
 namespace backend.Controllers;
@@ -13,9 +14,12 @@ public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
 
-    public UsersController(IUserService userService)
+    private readonly IWebHostEnvironment _environment;
+
+    public UsersController(IUserService userService, IWebHostEnvironment environment)
     {
         _userService = userService;
+        _environment = environment;
     }
 
     [HttpGet("me")]
@@ -35,12 +39,24 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("me/avatar")]
-    public ActionResult<ApiResponse<string>> UploadAvatar([FromForm] IFormFile file)
+    public async Task<ActionResult<ApiResponse<string>>> UploadAvatar([FromForm] IFormFile file)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new ApiResponse<string> { Code = 40001, Message = "file required" });
 
-        return Ok(new ApiResponse<string> { Data = "avatar-uploaded" });
+        var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "avatars");
+        if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var avatarUrl = $"/uploads/avatars/{fileName}";
+        return Ok(new ApiResponse<string> { Data = avatarUrl });
     }
 
     private int GetCurrentUserId()
