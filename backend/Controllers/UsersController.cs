@@ -35,7 +35,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("me/avatar")]
-    public ActionResult<ApiResponse<string>> UploadAvatar([FromForm] IFormFile file)
+    public ActionResult<ApiResponse<string>> UploadAvatar(IFormFile file)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new ApiResponse<string> { Code = 40001, Message = "file required" });

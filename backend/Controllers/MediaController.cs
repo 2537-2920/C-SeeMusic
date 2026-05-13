@@ -19,7 +19,7 @@ public class MediaController : ControllerBase
     }
 
     [HttpPost("upload")]
-    public async Task<ActionResult<ApiResponse<MediaUploadResponse>>> Upload([FromForm] IFormFile file, [FromForm] string type)
+    public async Task<ActionResult<ApiResponse<MediaUploadResponse>>> Upload(IFormFile file, [FromForm] string type)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new ApiResponse<MediaUploadResponse> { Code = 40001, Message = "file required" });
