@@ -9,6 +9,12 @@ public sealed class RegisterRequest
     public string ConfirmPassword { get; set; } = string.Empty;
 }
 
+public sealed class RegisterResponse
+{
+    public int UserId { get; set; }
+    public string Username { get; set; } = string.Empty;
+}
+
 public sealed class LoginRequest
 {
     public string Account { get; set; } = string.Empty;
