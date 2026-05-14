@@ -206,6 +206,46 @@ namespace SeeMusicApp
             var response = await _httpClient.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
+
+        public async Task<byte[]> DownloadScoreAsync(int scoreId)
+        {
+            // 1. 获取下载路径
+            var url = $"{BaseUrl}community/scores/{scoreId}/download";
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            
+            if (!string.IsNullOrEmpty(AccessToken))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+            }
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception("获取下载链接失败，请确认是否已登录。");
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<string>>(responseBody);
+            
+            if (string.IsNullOrEmpty(apiResponse.Data))
+            {
+                throw new Exception("获取下载链接失败。");
+            }
+
+            // 2. 下载真实文件
+            // 注意：apiResponse.Data 可能是 "/uploads/scores/xxx.pdf"，需要拼接 BaseUrl
+            // 拼接时要注意 BaseUrl 是否自带 api/v1/，我们可能需要去掉它
+            var fileUrl = apiResponse.Data;
+            if (fileUrl.StartsWith("/")) fileUrl = fileUrl.Substring(1);
+            
+            // 这里假设 BaseUrl 是 http://localhost:5000/api/v1/，
+            // 真实的静态文件地址在 http://localhost:5000/uploads/...
+            var hostUrl = BaseUrl.Replace("/api/v1/", "/");
+            var fullUrl = hostUrl + fileUrl;
+
+            var fileBytes = await _httpClient.GetByteArrayAsync(fullUrl);
+            return fileBytes;
+        }
     }
 
     public class CommentRequest

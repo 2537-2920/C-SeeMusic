@@ -5,6 +5,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
+using System.IO;
 
 namespace SeeMusicApp
 {
@@ -100,6 +102,34 @@ namespace SeeMusicApp
             catch (Exception ex)
             {
                 MessageBox.Show($"评论出错: {ex.Message}");
+            }
+        }
+
+        private async void BtnDownload_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentScoreId == -1) return;
+
+            try
+            {
+                // 1. 弹出保存对话框
+                SaveFileDialog sfd = new SaveFileDialog();
+                sfd.Filter = "乐谱文件 (*.pdf;*.midi;*.musicxml)|*.pdf;*.midi;*.musicxml|所有文件 (*.*)|*.*";
+                sfd.FileName = DetailTitle.Text; // 默认文件名
+
+                if (sfd.ShowDialog() == true)
+                {
+                    // 显示下载中状态（可选，这里先直接下）
+                    var fileBytes = await _apiClient.DownloadScoreAsync(_currentScoreId);
+                    
+                    // 2. 写入本地文件
+                    File.WriteAllBytes(sfd.FileName, fileBytes);
+                    
+                    MessageBox.Show("乐谱已成功下载到本地！", "下载成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"下载失败: {ex.Message}", "下载错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
