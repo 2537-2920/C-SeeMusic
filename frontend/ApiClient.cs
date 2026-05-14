@@ -157,12 +157,23 @@ namespace SeeMusicApp
         public string CoverUrl { get; set; }
         public int Price { get; set; }
         public int DownloadCount { get; set; }
+        public int FavoriteCount { get; set; }
     }
 
     public class ScoreDetailDto : ScoreDto
     {
         public string Description { get; set; }
         public string FileUrl { get; set; }
+        public int CommentCount { get; set; }
+        public List<CommentDto> RecentComments { get; set; }
+    }
+
+    public class CommentDto
+    {
+        public int Id { get; set; }
+        public string UserName { get; set; }
+        public string Content { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class UserDto

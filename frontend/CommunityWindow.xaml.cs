@@ -128,6 +128,14 @@ namespace SeeMusicApp
             var priceGrid = new Grid();
             priceGrid.Children.Add(new TextBlock { Text = score.Price == 0 ? "免费" : $"¥{score.Price / 100.0:F2}", FontWeight = FontWeights.Bold, Foreground = score.Price == 0 ? System.Windows.Media.Brushes.Green : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(69, 123, 157)) });
             
+            var statsStack = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            
+            // 收藏数
+            statsStack.Children.Add(new TextBlock { Text = "", FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,4,0) });
+            statsStack.Children.Add(new TextBlock { Text = FormatCount(score.FavoriteCount), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center });
+            
+            priceGrid.Children.Add(statsStack);
+            stack.Children.Add(priceGrid);
             border.Child = stack;
             return border;
         }
@@ -140,6 +148,16 @@ namespace SeeMusicApp
                 DetailTitle.Text = detail.Title;
                 DetailAuthor.Text = detail.AuthorName;
                 DetailCover.Text = detail.Title.Substring(0, 1);
+                
+                DetailFavoriteCount.Text = FormatCount(detail.FavoriteCount);
+                DetailCommentHeader.Text = $"社区评论 ({detail.CommentCount})";
+
+                // 填充评论
+                DetailCommentsPanel.Children.Clear();
+                foreach (var comment in detail.RecentComments)
+                {
+                    DetailCommentsPanel.Children.Add(CreateCommentItem(comment));
+                }
 
                 DetailEmptyState.Visibility = Visibility.Collapsed;
                 DetailContentState.Visibility = Visibility.Visible;
@@ -147,6 +165,34 @@ namespace SeeMusicApp
             catch { }
         }
 
+        private UIElement CreateCommentItem(CommentDto comment)
+        {
+            var grid = new Grid { Margin = new Thickness(0, 0, 0, 15) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var avatar = new System.Windows.Shapes.Ellipse { Width = 32, Height = 32, Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(226, 232, 240)), VerticalAlignment = VerticalAlignment.Top };
+            grid.Children.Add(avatar);
+
+            var stack = new StackPanel { Margin = new Thickness(10, 0, 0, 0) };
+            Grid.SetColumn(stack, 1);
+
+            var header = new StackPanel { Orientation = Orientation.Horizontal };
+            header.Children.Add(new TextBlock { Text = comment.UserName, FontWeight = FontWeights.Bold, FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(51, 51, 51)) });
+            header.Children.Add(new TextBlock { Text = comment.CreatedAt.ToString("MM-dd HH:mm"), FontSize = 10, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(203, 211, 225)), Margin = new Thickness(10, 2, 0, 0) });
+            
+            stack.Children.Add(header);
+            stack.Children.Add(new TextBlock { Text = comment.Content, FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(100, 116, 139)), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 5, 0, 0) });
+
+            grid.Children.Add(stack);
+            return grid;
+        }
+
+        private string FormatCount(int count)
+        {
+            if (count >= 1000) return (count / 1000.0).ToString("F1") + "k";
+            return count.ToString();
+        }
 
         // 窗口无边框拖拽
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
