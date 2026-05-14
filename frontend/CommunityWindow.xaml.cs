@@ -124,6 +124,10 @@ namespace SeeMusicApp
                     // 2. 写入本地文件
                     File.WriteAllBytes(sfd.FileName, fileBytes);
                     
+                    // 3. 刷新 UI（更新下载量）
+                    await ShowScoreDetail(_currentScoreId);
+                    await LoadScores(SearchBox.Text, _currentCategory);
+                    
                     MessageBox.Show("乐谱已成功下载到本地！", "下载成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
@@ -254,6 +258,10 @@ namespace SeeMusicApp
             
             var statsStack = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             
+            // 下载数
+            statsStack.Children.Add(new TextBlock { Text = "\uE896", FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,4,0) });
+            statsStack.Children.Add(new TextBlock { Text = FormatCount(score.DownloadCount), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,10,0) });
+
             // 收藏数
             statsStack.Children.Add(new TextBlock { Text = "\uEB52", FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,4,0) });
             statsStack.Children.Add(new TextBlock { Text = FormatCount(score.FavoriteCount), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center });
@@ -275,6 +283,7 @@ namespace SeeMusicApp
                 DetailCover.Text = detail.Title.Substring(0, 1);
                 
                 DetailFavoriteCount.Text = FormatCount(detail.FavoriteCount);
+                DetailDownloadCount.Text = FormatCount(detail.DownloadCount);
                 DetailCommentHeader.Text = $"社区评论 ({detail.CommentCount})";
 
                 // 更新点赞状态和 UI

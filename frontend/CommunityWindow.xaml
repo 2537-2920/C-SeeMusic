@@ -277,10 +277,16 @@
                                         <TextBlock x:Name="DetailAuthor" Text="周杰伦" FontSize="14" Foreground="#94A3B8" Margin="0,5,0,0"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                        <TextBlock x:Name="DetailFavoriteCount" Text="0" FontSize="14" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                        <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnFavorite_Click">
-                                            <TextBlock x:Name="DetailFavoriteIcon" Text="&#xEB52;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#CBD5E1"/>
-                                        </Button>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
+                                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#94A3B8" Margin="0,0,5,0"/>
+                                            <TextBlock x:Name="DetailDownloadCount" Text="0" FontSize="14" Foreground="#94A3B8"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                            <TextBlock x:Name="DetailFavoriteCount" Text="0" FontSize="14" Foreground="#94A3B8" Margin="0,0,5,0"/>
+                                            <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnFavorite_Click">
+                                                <TextBlock x:Name="DetailFavoriteIcon" Text="&#xEB51;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#CBD5E1"/>
+                                            </Button>
+                                        </StackPanel>
                                     </StackPanel>
                                 </Grid>
 
