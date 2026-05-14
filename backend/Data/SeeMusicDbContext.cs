@@ -117,6 +117,7 @@ public class SeeMusicDbContext : DbContext
             entity.ToTable("score_categories");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(50).HasColumnName("name");
+            entity.Property(e => e.Slug).IsRequired().HasMaxLength(50).HasColumnName("slug");
             entity.Property(e => e.SortOrder).HasColumnName("sort_order");
         });
 
@@ -175,10 +176,10 @@ public class SeeMusicDbContext : DbContext
 
         // 种子数据：初始分类
         modelBuilder.Entity<ScoreCategory>().HasData(
-            new ScoreCategory { Id = 1, Name = "流行", SortOrder = 1 },
-            new ScoreCategory { Id = 2, Name = "古典", SortOrder = 2 },
-            new ScoreCategory { Id = 3, Name = "爵士", SortOrder = 3 },
-            new ScoreCategory { Id = 4, Name = "ACG", SortOrder = 4 }
+            new ScoreCategory { Id = 1, Name = "流行", Slug = "pop", SortOrder = 1 },
+            new ScoreCategory { Id = 2, Name = "古典", Slug = "classical", SortOrder = 2 },
+            new ScoreCategory { Id = 3, Name = "爵士", Slug = "jazz", SortOrder = 3 },
+            new ScoreCategory { Id = 4, Name = "ACG", Slug = "acg", SortOrder = 4 }
         );
     }
 }

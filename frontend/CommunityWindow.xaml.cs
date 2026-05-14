@@ -275,8 +275,26 @@ namespace SeeMusicApp
             }
 
             stack.Children.Add(coverBorder);
-            stack.Children.Add(new TextBlock { Text = score.Title, FontWeight = FontWeights.Bold, FontSize = 18, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(30, 41, 59)) });
-            stack.Children.Add(new TextBlock { Text = score.AuthorName, FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), Margin = new Thickness(0, 5, 0, 15) });
+            
+            // 标题与分类标签
+            var titlePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0,0,0,5) };
+            titlePanel.Children.Add(new TextBlock { Text = score.Title, FontWeight = FontWeights.Bold, FontSize = 18, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(30, 41, 59)), VerticalAlignment = VerticalAlignment.Center });
+            stack.Children.Add(titlePanel);
+            
+            // 作者与上传者信息
+            var infoPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 15), VerticalAlignment = VerticalAlignment.Center };
+            infoPanel.Children.Add(new TextBlock { Text = score.AuthorName, FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center });
+            if (!string.IsNullOrEmpty(score.UploaderName))
+            {
+                infoPanel.Children.Add(new TextBlock { Text = $" • @{score.UploaderName}", FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center });
+            }
+            if (!string.IsNullOrEmpty(score.CategoryName))
+            {
+                var tagBorder = new Border { Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(241, 245, 249)), CornerRadius = new CornerRadius(4), Padding = new Thickness(6, 2, 6, 2), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+                tagBorder.Child = new TextBlock { Text = score.CategoryName, FontSize = 10, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(100, 116, 139)), VerticalAlignment = VerticalAlignment.Center };
+                infoPanel.Children.Add(tagBorder);
+            }
+            stack.Children.Add(infoPanel);
 
             var priceGrid = new Grid();
             priceGrid.Children.Add(new TextBlock { Text = score.Price == 0 ? "免费" : $"¥{score.Price / 100.0:F2}", FontWeight = FontWeights.Bold, Foreground = score.Price == 0 ? System.Windows.Media.Brushes.Green : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(69, 123, 157)) });
@@ -304,7 +322,21 @@ namespace SeeMusicApp
             {
                 var detail = await _apiClient.GetScoreDetailAsync(scoreId);
                 DetailTitle.Text = detail.Title;
-                DetailAuthor.Text = detail.AuthorName;
+                
+                string authorInfo = detail.AuthorName;
+                if (!string.IsNullOrEmpty(detail.UploaderName)) authorInfo += $" (上传者: @{detail.UploaderName})";
+                DetailAuthor.Text = authorInfo;
+
+                if (!string.IsNullOrEmpty(detail.CategoryName))
+                {
+                    DetailCategoryTag.Visibility = Visibility.Visible;
+                    DetailCategoryText.Text = detail.CategoryName;
+                }
+                else
+                {
+                    DetailCategoryTag.Visibility = Visibility.Collapsed;
+                }
+                
                 DetailCover.Text = detail.Title.Substring(0, 1);
                 
                 DetailFavoriteCount.Text = FormatCount(detail.FavoriteCount);

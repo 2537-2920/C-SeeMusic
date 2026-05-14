@@ -275,6 +275,9 @@ namespace SeeMusicApp
         [JsonProperty("authorName")]
         public string AuthorName { get; set; }
 
+        [JsonProperty("arrangementTag")]
+        public string ArrangementTag { get; set; }
+
         [JsonProperty("coverUrl")]
         public string CoverUrl { get; set; }
 
@@ -286,6 +289,12 @@ namespace SeeMusicApp
 
         [JsonProperty("favoriteCount")]
         public int FavoriteCount { get; set; }
+
+        [JsonProperty("categoryName")]
+        public string CategoryName { get; set; }
+
+        [JsonProperty("uploaderName")]
+        public string UploaderName { get; set; }
     }
 
     public class ScoreDetailDto : ScoreDto

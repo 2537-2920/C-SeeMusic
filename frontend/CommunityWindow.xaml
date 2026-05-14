@@ -274,19 +274,31 @@
                                 <Grid Margin="0,0,0,20">
                                     <StackPanel>
                                         <TextBlock x:Name="DetailTitle" Text="晴天" FontSize="24" FontWeight="Bold" Foreground="#1E293B"/>
-                                        <TextBlock x:Name="DetailAuthor" Text="周杰伦" FontSize="14" Foreground="#94A3B8" Margin="0,5,0,0"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="DetailAuthor" Text="周杰伦" FontSize="14" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                            <Border x:Name="DetailCategoryTag" Background="#F1F5F9" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center" Visibility="Collapsed">
+                                                <TextBlock x:Name="DetailCategoryText" Text="流行" FontSize="12" Foreground="#64748B"/>
+                                            </Border>
+                                        </StackPanel>
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
-                                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#94A3B8" Margin="0,0,5,0"/>
-                                            <TextBlock x:Name="DetailDownloadCount" Text="0" FontSize="14" Foreground="#94A3B8"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                            <TextBlock x:Name="DetailFavoriteCount" Text="0" FontSize="14" Foreground="#94A3B8" Margin="0,0,5,0"/>
-                                            <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnFavorite_Click">
-                                                <TextBlock x:Name="DetailFavoriteIcon" Text="&#xEB51;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#CBD5E1"/>
-                                            </Button>
-                                        </StackPanel>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,5,0,0">
+                                        <!-- 下载统计 -->
+                                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="15" Padding="12,6" Margin="0,0,10,0">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#64748B" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="DetailDownloadCount" Text="0" FontSize="13" FontWeight="SemiBold" Foreground="#475569" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        
+                                        <!-- 点赞统计 -->
+                                        <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnFavorite_Click" Padding="0">
+                                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="15" Padding="12,6">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock x:Name="DetailFavoriteIcon" Text="&#xEB51;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#94A3B8" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                    <TextBlock x:Name="DetailFavoriteCount" Text="0" FontSize="13" FontWeight="SemiBold" Foreground="#475569" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Button>
                                     </StackPanel>
                                 </Grid>
 

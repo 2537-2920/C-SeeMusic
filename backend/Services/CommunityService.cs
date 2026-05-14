@@ -52,7 +52,9 @@ public class CommunityService : ICommunityService
                 CoverUrl = s.CoverUrl,
                 Price = s.PriceCent,
                 DownloadCount = s.DownloadCount,
-                FavoriteCount = s.FavoriteCount
+                FavoriteCount = s.FavoriteCount,
+                CategoryName = s.CategoryRelations.Select(cr => cr.Category.Name).FirstOrDefault(),
+                UploaderName = s.Owner != null ? (s.Owner.DisplayName ?? s.Owner.Username) : "Unknown"
             })
             .ToListAsync();
     }
@@ -60,6 +62,8 @@ public class CommunityService : ICommunityService
     public async Task<ScoreDetailDto?> GetScoreDetailAsync(int scoreId, int? userId = null)
     {
         var score = await _context.Scores
+            .Include(s => s.Owner)
+            .Include(s => s.CategoryRelations).ThenInclude(cr => cr.Category)
             .Include(s => s.Comments.OrderByDescending(c => c.CreatedAt).Take(5))
             .ThenInclude(c => c.User)
             .FirstOrDefaultAsync(s => s.Id == scoreId);
@@ -84,6 +88,8 @@ public class CommunityService : ICommunityService
             Price = score.PriceCent,
             DownloadCount = score.DownloadCount,
             FavoriteCount = score.FavoriteCount,
+            CategoryName = score.CategoryRelations.Select(cr => cr.Category?.Name).FirstOrDefault(),
+            UploaderName = score.Owner != null ? (score.Owner.DisplayName ?? score.Owner.Username) : "Unknown",
             Description = score.Description,
             FileUrl = score.FileUrl,
             CommentCount = score.CommentCount,
@@ -215,6 +221,20 @@ public class CommunityService : ICommunityService
         if (!string.IsNullOrEmpty(request.Category))
         {
             var category = await _context.ScoreCategories.FirstOrDefaultAsync(c => c.Name == request.Category);
+            
+            // 如果数据库中不存在该分类，则自动创建一个
+            if (category == null)
+            {
+                category = new ScoreCategory 
+                { 
+                    Name = request.Category, 
+                    Slug = request.Category.ToLower(), // 数据库要求 slug 必填且唯一
+                    SortOrder = 0 
+                };
+                _context.ScoreCategories.Add(category);
+                await _context.SaveChangesAsync();
+            }
+
             if (category != null)
             {
                 _context.ScoreCategoryRelations.Add(new ScoreCategoryRelation

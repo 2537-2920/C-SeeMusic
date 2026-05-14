@@ -1,0 +1,63 @@
+<Window x:Class="SeeMusicApp.CoverCropWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="裁剪封面" Height="500" Width="600"
+        WindowStartupLocation="CenterOwner" Background="White"
+        WindowStyle="None" AllowsTransparency="True"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    
+    <Border CornerRadius="20" Background="White" BorderBrush="#F1F5F9" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="30" Color="Black" Opacity="0.1" ShadowDepth="0"/>
+        </Border.Effect>
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,15">
+                <TextBlock Text="裁剪封面 (拖拽框选保留区域)" FontSize="18" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center"/>
+                <Button HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnCancel_Click">
+                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#94A3B8"/>
+                </Button>
+            </Grid>
+
+            <!-- Crop Area -->
+            <Border Grid.Row="1" Background="#F8FAFC" CornerRadius="12" ClipToBounds="True">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <Canvas x:Name="CropCanvas" Background="Transparent" 
+                            MouseLeftButtonDown="CropCanvas_MouseLeftButtonDown"
+                            MouseMove="CropCanvas_MouseMove"
+                            MouseLeftButtonUp="CropCanvas_MouseLeftButtonUp"
+                            Cursor="Cross">
+                        <!-- 原始图片 -->
+                        <Image x:Name="SourceImage" Stretch="None"/>
+                        <!-- 裁剪框 -->
+                        <Rectangle x:Name="SelectionBox" Stroke="#22C55E" StrokeThickness="2" Fill="#4022C55E" Visibility="Collapsed"/>
+                    </Canvas>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Actions -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                <Button Content="取消" Width="100" Height="40" Background="#F1F5F9" Foreground="#64748B" FontWeight="Bold" BorderThickness="0" Cursor="Hand" Margin="0,0,15,0" Click="BtnCancel_Click">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+                <Button Content="确认裁剪" Width="120" Height="40" Background="#457b9d" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" Click="BtnConfirm_Click">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

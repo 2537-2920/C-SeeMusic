@@ -14,6 +14,8 @@ public class ScoreDto
     public bool IsFree => Price == 0;
     public int DownloadCount { get; set; }
     public int FavoriteCount { get; set; }
+    public string? CategoryName { get; set; }
+    public string? UploaderName { get; set; }
 }
 
 public class ScoreDetailDto : ScoreDto

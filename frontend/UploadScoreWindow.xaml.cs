@@ -31,15 +31,29 @@ namespace SeeMusicApp
         }
 
         // 选择封面图片
-        private void BtnChangeCover_Click(object sender, RoutedEventArgs e)
+        private void BtnChangeCover_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "图片文件 (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png";
-            if (openFileDialog.ShowDialog() == true)
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "图片文件 (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg";
+            if (ofd.ShowDialog() == true)
             {
-                selectedCoverPath = openFileDialog.FileName;
-                ImgCover.Source = new BitmapImage(new Uri(selectedCoverPath));
-                PlaceholderIcon.Visibility = Visibility.Collapsed;
+                // 弹出裁剪窗口
+                CoverCropWindow cropWin = new CoverCropWindow(ofd.FileName);
+                cropWin.Owner = this;
+                if (cropWin.ShowDialog() == true)
+                {
+                    selectedCoverPath = cropWin.CroppedImagePath;
+                    
+                    // 加载裁剪后的图片
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.UriSource = new Uri(selectedCoverPath);
+                    bitmap.EndInit();
+                    
+                    ImgCover.Source = bitmap;
+                    PlaceholderIcon.Visibility = Visibility.Collapsed;
+                }
             }
         }
 
@@ -94,10 +108,13 @@ namespace SeeMusicApp
                     }
 
                     // 3. 添加表单数据
-                    content.Add(new StringContent(TxtTitle.Text), "Title");
-                    content.Add(new StringContent(TxtArtist.Text ?? ""), "ArtistName");
-                    content.Add(new StringContent(ComboCategory.Text ?? ""), "Category");
-                    content.Add(new StringContent(TxtPrice.Text ?? "0"), "Price");
+                    content.Add(new StringContent(TxtTitle.Text, System.Text.Encoding.UTF8), "Title");
+                    content.Add(new StringContent(TxtArtist.Text ?? "", System.Text.Encoding.UTF8), "ArtistName");
+                    
+                    string categoryValue = (ComboCategory.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? "流行";
+                    content.Add(new StringContent(categoryValue, System.Text.Encoding.UTF8), "Category");
+                    
+                    content.Add(new StringContent(TxtPrice.Text ?? "0", System.Text.Encoding.UTF8), "Price");
 
                     // 4. 调用真实接口
                     await _apiClient.PostMultipartAsync<object>("community/scores", content);
