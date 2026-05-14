@@ -23,6 +23,43 @@ namespace SeeMusicApp
             await LoadScores();
         }
 
+        private async void FilterCategory_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button clickedButton)
+            {
+                // 更新样式：让所有分类按钮变回普通样式
+                foreach (var child in CategoryPanel.Children)
+                {
+                    if (child is Button btn)
+                    {
+                        btn.Style = (Style)this.Resources["FilterBtnStyle"];
+                    }
+                }
+
+                // 让当前点击的按钮高亮
+                clickedButton.Style = (Style)this.Resources["ActiveFilterBtnStyle"];
+
+                // 获取分类名称进行查询 (如果是“精选”则传 null 表示显示全部)
+                string category = clickedButton.Content.ToString();
+                if (category == "精选") category = null;
+
+                await LoadScores(null, category);
+            }
+        }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            SearchPlaceholder.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private async void SearchBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                await LoadScores(SearchBox.Text);
+            }
+        }
+
         private async Task LoadScores(string keyword = null, string category = null)
         {
             try
@@ -129,11 +166,14 @@ namespace SeeMusicApp
         }
 
         // 上传按钮提示
-        private void BtnUpload_Click(object sender, RoutedEventArgs e)
+        private async void BtnUpload_Click(object sender, RoutedEventArgs e)
         {
             UploadScoreWindow uploadWin = new UploadScoreWindow();
             uploadWin.Owner = this; // 设置所有者，使其居中弹出
-            uploadWin.ShowDialog();
+            if (uploadWin.ShowDialog() == true)
+            {
+                await LoadScores();
+            }
         }
 
         // 乐谱卡片点击：联动右侧详情面板

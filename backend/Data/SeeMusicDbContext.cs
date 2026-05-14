@@ -84,16 +84,26 @@ public class SeeMusicDbContext : DbContext
             entity.Property(e => e.ArtistName).HasMaxLength(100).HasColumnName("artist_name");
             entity.Property(e => e.ArrangementTag).HasMaxLength(50).HasColumnName("arrangement_tag");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.SourceMediaId).HasColumnName("source_media_id");
+            entity.Property(e => e.CoverMediaId).HasColumnName("cover_media_id");
+            entity.Property(e => e.KeySignature).HasColumnName("key_signature");
+            entity.Property(e => e.TimeSignature).HasColumnName("time_signature");
+            entity.Property(e => e.Tempo).HasColumnName("tempo");
             entity.Property(e => e.OwnerUserId).HasColumnName("owner_user_id");
             entity.Property(e => e.CoverUrl).HasColumnName("cover_url");
             entity.Property(e => e.FileUrl).HasColumnName("file_url");
             entity.Property(e => e.PriceCent).HasColumnName("price_cent");
             entity.Property(e => e.IsPublic).HasColumnName("is_public");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.SourceType).HasColumnName("source_type");
             entity.Property(e => e.DownloadCount).HasColumnName("download_count");
             entity.Property(e => e.FavoriteCount).HasColumnName("favorite_count");
             entity.Property(e => e.CommentCount).HasColumnName("comment_count");
+            entity.Property(e => e.ShareCount).HasColumnName("share_count");
+            entity.Property(e => e.PrimaryCategory).HasColumnName("primary_category");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.PublishedAt).HasColumnName("published_at");
 
             // 导航属性
             entity.HasOne(e => e.Owner)

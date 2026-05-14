@@ -45,18 +45,25 @@ public sealed class Score
     public string? ArtistName { get; set; }
     public string? ArrangementTag { get; set; }
     public string? Description { get; set; }
-    public string? FileUrl { get; set; }
-    public string? CoverUrl { get; set; }
-    public int PriceCent { get; set; } = 0;
+    public int? SourceMediaId { get; set; }
+    public int? CoverMediaId { get; set; }
+    public string? KeySignature { get; set; }
+    public string? TimeSignature { get; set; }
+    public int? Tempo { get; set; }
+    public string Status { get; set; } = "published"; // draft, processing, ready, published
+    public string SourceType { get; set; } = "audio"; // audio, video, microphone, sample
     public bool IsPublic { get; set; } = true;
-    public string Status { get; set; } = "published";
+    public int PriceCent { get; set; } = 0;
     public int DownloadCount { get; set; } = 0;
     public int FavoriteCount { get; set; } = 0;
     public int CommentCount { get; set; } = 0;
     public int ShareCount { get; set; } = 0;
+    public string? CoverUrl { get; set; }
+    public string? FileUrl { get; set; }
     public string? PrimaryCategory { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? PublishedAt { get; set; }
 
     // Navigation properties
     public User? Owner { get; set; }
