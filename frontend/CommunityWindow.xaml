@@ -186,7 +186,8 @@
 
                 <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,20">
                     <StackPanel x:Name="CategoryPanel" Orientation="Horizontal">
-                        <Button x:Name="BtnCategoryFeatured" Style="{StaticResource ActiveFilterBtnStyle}" Content="精选" Margin="0,0,15,0" Click="FilterCategory_Click"/>
+                        <Button x:Name="BtnCategoryAll" Style="{StaticResource ActiveFilterBtnStyle}" Content="全部" Margin="0,0,15,0" Click="FilterCategory_Click"/>
+                        <Button Style="{StaticResource FilterBtnStyle}" Content="精选" Margin="0,0,15,0" Click="FilterCategory_Click"/>
                         <Button Style="{StaticResource FilterBtnStyle}" Content="流行" Margin="0,0,15,0" Click="FilterCategory_Click"/>
                         <Button Style="{StaticResource FilterBtnStyle}" Content="古典" Margin="0,0,15,0" Click="FilterCategory_Click"/>
                         <Button Style="{StaticResource FilterBtnStyle}" Content="爵士" Margin="0,0,15,0" Click="FilterCategory_Click"/>

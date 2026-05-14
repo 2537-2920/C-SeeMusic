@@ -13,6 +13,7 @@ namespace SeeMusicApp
         private readonly ApiClient _apiClient = new ApiClient();
         private int _currentScoreId = -1;
         private bool _isCurrentScoreFavorited = false;
+        private string _currentCategory = null; // 记录当前选中的分类
 
         public CommunityWindow()
         {
@@ -123,11 +124,20 @@ namespace SeeMusicApp
                 // 让当前点击的按钮高亮
                 clickedButton.Style = (Style)this.Resources["ActiveFilterBtnStyle"];
 
-                // 获取分类名称进行查询 (如果是“精选”则传 null 表示显示全部)
-                string category = clickedButton.Content.ToString();
-                if (category == "精选") category = null;
+                // 获取分类名称进行查询
+                string categoryName = clickedButton.Content.ToString();
+                
+                // 如果是“全部”，则传 null 表示显示所有分类
+                if (categoryName == "全部")
+                {
+                    _currentCategory = null;
+                }
+                else
+                {
+                    _currentCategory = categoryName;
+                }
 
-                await LoadScores(null, category);
+                await LoadScores(SearchBox.Text, _currentCategory);
             }
         }
 
@@ -140,7 +150,7 @@ namespace SeeMusicApp
         {
             if (e.Key == Key.Enter)
             {
-                await LoadScores(SearchBox.Text);
+                await LoadScores(SearchBox.Text, _currentCategory);
             }
         }
 
