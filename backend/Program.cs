@@ -79,14 +79,13 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("--> [DB] Attempting to connect and migrate...");
         context.Database.Migrate();
         Console.WriteLine("--> [DB] Migration successful.");
+        
+        // 自动填充测试数据 (如果对方提供了此功能)
+        // DbSeeder.Seed(context); 
     }
     catch (Exception ex)
     {
         Console.WriteLine($"--> [DB ERROR] Migration failed: {ex.Message}");
-        if (ex.InnerException != null)
-        {
-            Console.WriteLine($"--> [DB INNER ERROR] {ex.InnerException.Message}");
-        }
     }
 }
 
@@ -95,10 +94,13 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseStaticFiles();
+// 禁用 HTTPS 重定向，避免本地证书引发的连接失败
 // app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.Use(async (context, next) =>
 {
     try

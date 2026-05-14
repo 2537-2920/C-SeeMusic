@@ -52,6 +52,7 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="Microsoft.VisualBasic" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -62,6 +63,7 @@
     <Compile Include="CommunityWindow.xaml.cs">
       <DependentUpon>CommunityWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CommunityModels.cs" />
     <Compile Include="LoginWindow.xaml.cs">
       <DependentUpon>LoginWindow.xaml</DependentUpon>
     </Compile>
@@ -74,6 +76,7 @@
     <Compile Include="SingingEvaluationWindow.xaml.cs">
       <DependentUpon>SingingEvaluationWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Converters.cs" />
     <Compile Include="UploadScoreWindow.xaml.cs">
       <DependentUpon>UploadScoreWindow.xaml</DependentUpon>
     </Compile>

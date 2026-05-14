@@ -10,4 +10,9 @@ public sealed class UserDto
     public string Bio { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastLoginAt { get; set; } = DateTime.UtcNow;
+
+    // Statistics fields for Profile
+    public int TranscriptionCount { get; set; }
+    public int EvaluationDurationHours { get; set; }
+    public int FavoriteCount { get; set; }
 }

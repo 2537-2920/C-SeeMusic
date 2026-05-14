@@ -94,6 +94,11 @@ public class SeeMusicDbContext : DbContext
             entity.Property(e => e.CommentCount).HasColumnName("comment_count");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            // 导航属性
+            entity.HasOne(e => e.Owner)
+                  .WithMany()
+                  .HasForeignKey(e => e.OwnerUserId);
         });
 
         // 配置 ScoreCategory
@@ -127,6 +132,10 @@ public class SeeMusicDbContext : DbContext
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Status).HasColumnName("status");
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId);
         });
 
         // 配置 ScoreFavorite
