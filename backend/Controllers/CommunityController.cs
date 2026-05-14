@@ -137,6 +137,13 @@ public class CommunityController : ControllerBase
         return Ok(new ApiResponse<string> { Data = url });
     }
 
+    [HttpGet("categories/stats")]
+    public async Task<ActionResult<ApiResponse<Dictionary<string, int>>>> GetCategoryStats()
+    {
+        var stats = await _communityService.GetCategoryStatsAsync();
+        return Ok(new ApiResponse<Dictionary<string, int>> { Data = stats });
+    }
+
     private int GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);

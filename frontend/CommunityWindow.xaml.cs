@@ -140,6 +140,30 @@ namespace SeeMusicApp
         private async void CommunityWindow_Loaded(object sender, RoutedEventArgs e)
         {
             await LoadScores();
+            await RefreshCategoryStats();
+        }
+
+        private async Task RefreshCategoryStats()
+        {
+            try
+            {
+                var stats = await _apiClient.GetCategoryStatsAsync();
+                foreach (var child in CategoryPanel.Children)
+                {
+                    if (child is Button btn)
+                    {
+                        // 提取原始名称（去掉括号里的数字）
+                        string content = btn.Content.ToString();
+                        string rawName = content.Split(' ')[0];
+                        
+                        if (stats.ContainsKey(rawName))
+                        {
+                            btn.Content = $"{rawName} ({stats[rawName]})";
+                        }
+                    }
+                }
+            }
+            catch { /* 忽略统计加载失败 */ }
         }
 
         private async void FilterCategory_Click(object sender, RoutedEventArgs e)
@@ -159,7 +183,8 @@ namespace SeeMusicApp
                 clickedButton.Style = (Style)this.Resources["ActiveFilterBtnStyle"];
 
                 // 获取分类名称进行查询
-                string categoryName = clickedButton.Content.ToString();
+                string content = clickedButton.Content.ToString();
+                string categoryName = content.Split(' ')[0]; // 只取空格前的名字
                 
                 // 如果是“全部”，则传 null 表示显示所有分类
                 if (categoryName == "全部")

@@ -13,4 +13,5 @@ public interface ICommunityService
     Task<bool> ToggleFavoriteAsync(int scoreId, int userId, bool favorite);
     Task<string?> GetDownloadUrlAsync(int scoreId, int userId);
     Task<ScoreDto> UploadScoreAsync(ScoreUploadRequest request, IFormFile scoreFile, IFormFile? coverFile, int userId);
+    Task<Dictionary<string, int>> GetCategoryStatsAsync();
 }

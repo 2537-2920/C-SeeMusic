@@ -246,6 +246,17 @@ namespace SeeMusicApp
             var fileBytes = await _httpClient.GetByteArrayAsync(fullUrl);
             return fileBytes;
         }
+
+        public async Task<Dictionary<string, int>> GetCategoryStatsAsync()
+        {
+            var url = $"{BaseUrl}community/categories/stats";
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<Dictionary<string, int>>>(responseBody);
+            return apiResponse.Data;
+        }
     }
 
     public class CommentRequest

@@ -257,4 +257,29 @@ public class CommunityService : ICommunityService
 
         return $"/uploads/{folder}/{fileName}";
     }
+
+    public async Task<Dictionary<string, int>> GetCategoryStatsAsync()
+    {
+        // 1. 获取全部分类
+        var categories = await _context.ScoreCategories.ToListAsync();
+        
+        // 2. 获取分类下的数量（通过关系表查询）
+        var stats = await _context.ScoreCategoryRelations
+            .GroupBy(r => r.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.CategoryId, x => x.Count);
+
+        // 3. 组装结果
+        var result = new Dictionary<string, int>();
+        foreach (var cat in categories)
+        {
+            result[cat.Name] = stats.ContainsKey(cat.Id) ? stats[cat.Id] : 0;
+        }
+
+        // 4. 计算总数
+        var totalCount = await _context.Scores.CountAsync();
+        result["全部"] = totalCount;
+
+        return result;
+    }
 }
