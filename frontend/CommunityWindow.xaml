@@ -261,96 +261,87 @@
                         <TextBlock Text="选择一份乐谱查看详情" Foreground="#94A3B8" FontSize="14" HorizontalAlignment="Center"/>
                     </StackPanel>
 
-                    <StackPanel x:Name="DetailContentState" Visibility="Collapsed">
-                        <Grid Margin="0,0,0,20">
+                    <Grid x:Name="DetailContentState" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- 上部可滚动内容 -->
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
                             <StackPanel>
-                                <TextBlock x:Name="DetailTitle" Text="晴天" FontSize="24" FontWeight="Bold" Foreground="#1E293B"/>
-                                <TextBlock x:Name="DetailAuthor" Text="周杰伦" FontSize="14" Foreground="#94A3B8" Margin="0,5,0,0"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                <TextBlock x:Name="DetailFavoriteCount" Text="0" FontSize="14" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <Button Background="Transparent" BorderThickness="0" Cursor="Hand">
-                                    <TextBlock x:Name="DetailFavoriteIcon" Text="&#xEB52;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#CBD5E1"/>
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-
-                        <Border Height="250" Background="#F8FAFC" CornerRadius="16" Margin="0,0,0,25">
-                            <TextBlock x:Name="DetailCover" Text="QT" FontSize="80" FontWeight="Bold" Foreground="#E2E8F0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-
-                        <Grid Margin="0,0,0,30">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="15"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Button Grid.Column="0" Background="#457b9d" Foreground="White" FontWeight="Bold" FontSize="16" BorderThickness="0" Padding="0,15" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="16"/>
-                                    </Style>
-                                </Button.Resources>
-                                <TextBlock Text="立即下载"/>
-                            </Button>
-                            <Button Grid.Column="2" Background="#F8FAFC" BorderThickness="0" Width="55" Cursor="Hand">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="16"/>
-                                    </Style>
-                                </Button.Resources>
-                                <TextBlock Text="&#xE72D;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#94A3B8"/>
-                            </Button>
-                        </Grid>
-
-                        <TextBlock x:Name="DetailCommentHeader" Text="社区评论 (0)" FontWeight="Bold" FontSize="14" Margin="0,0,0,15"/>
-                        <ScrollViewer Height="180" VerticalScrollBarVisibility="Auto" Margin="0,0,0,15">
-                            <StackPanel x:Name="DetailCommentsPanel">
-                                <Grid Margin="0,0,0,15">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Ellipse Width="32" Height="32" Fill="#E2E8F0" VerticalAlignment="Top"/>
-                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="路德维希" FontWeight="Bold" FontSize="12" Foreground="#333"/>
-                                            <TextBlock Text="2小时前" FontSize="10" Foreground="#CBD5E1" Margin="10,2,0,0"/>
-                                        </StackPanel>
-                                        <TextBlock Text="这首谱子转调处理得非常巧妙，值得学习！" FontSize="12" Foreground="#64748B" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                <Grid Margin="0,0,0,20">
+                                    <StackPanel>
+                                        <TextBlock x:Name="DetailTitle" Text="晴天" FontSize="24" FontWeight="Bold" Foreground="#1E293B"/>
+                                        <TextBlock x:Name="DetailAuthor" Text="周杰伦" FontSize="14" Foreground="#94A3B8" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                        <TextBlock x:Name="DetailFavoriteCount" Text="0" FontSize="14" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <Button Background="Transparent" BorderThickness="0" Cursor="Hand">
+                                            <TextBlock x:Name="DetailFavoriteIcon" Text="&#xEB52;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#CBD5E1"/>
+                                        </Button>
                                     </StackPanel>
                                 </Grid>
-                                <Grid>
+
+                                <Border Height="250" Background="#F8FAFC" CornerRadius="16" Margin="0,0,0,25">
+                                    <TextBlock x:Name="DetailCover" Text="QT" FontSize="80" FontWeight="Bold" Foreground="#E2E8F0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+
+                                <Grid Margin="0,0,0,30">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="15"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Ellipse Width="32" Height="32" Fill="#E2E8F0" VerticalAlignment="Top"/>
-                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="琴心剑胆" FontWeight="Bold" FontSize="12" Foreground="#333"/>
-                                            <TextBlock Text="昨天" FontSize="10" Foreground="#CBD5E1" Margin="10,2,0,0"/>
-                                        </StackPanel>
-                                        <TextBlock Text="感谢分享，找了好久这个版本的钢琴谱。" FontSize="12" Foreground="#64748B" TextWrapping="Wrap" Margin="0,5,0,0"/>
-                                    </StackPanel>
+                                    <Button Grid.Column="0" Background="#457b9d" Foreground="White" FontWeight="Bold" FontSize="16" BorderThickness="0" Padding="0,15" Cursor="Hand">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="16"/>
+                                            </Style>
+                                        </Button.Resources>
+                                        <TextBlock Text="立即下载"/>
+                                    </Button>
+                                    <Button Grid.Column="2" Background="#F8FAFC" BorderThickness="0" Width="55" Cursor="Hand">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="16"/>
+                                            </Style>
+                                        </Button.Resources>
+                                        <TextBlock Text="&#xE72D;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#94A3B8"/>
+                                    </Button>
                                 </Grid>
+
+                                <TextBlock x:Name="DetailCommentHeader" Text="社区评论 (0)" FontWeight="Bold" FontSize="14" Margin="0,0,0,15"/>
+                                <StackPanel x:Name="DetailCommentsPanel" Margin="0,0,0,20"/>
                             </StackPanel>
                         </ScrollViewer>
 
-                        <Grid>
-                            <TextBox Background="#F8FAFC" BorderThickness="0" Padding="15,12" Foreground="#333" FontSize="12" VerticalContentAlignment="Center">
+                        <!-- 底部固定输入框 -->
+                        <Grid Grid.Row="1" Margin="0,15,0,0">
+                            <TextBox x:Name="CommentInput" Background="#F8FAFC" BorderThickness="0" Padding="15,12,60,12" Foreground="#333" FontSize="12" VerticalContentAlignment="Center">
                                 <TextBox.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="12"/>
                                     </Style>
                                 </TextBox.Resources>
                             </TextBox>
-                            <TextBlock Text="我也说两句..." Foreground="#94A3B8" FontSize="12" Margin="15,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
-                            <Button Background="Transparent" BorderThickness="0" Foreground="#457b9d" FontWeight="Bold" FontSize="12" HorizontalAlignment="Right" Margin="0,0,15,0" Cursor="Hand">
+                            <TextBlock Text="我也说两句..." Foreground="#94A3B8" FontSize="12" Margin="15,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=CommentInput}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Button Background="Transparent" BorderThickness="0" Foreground="#457b9d" FontWeight="Bold" FontSize="12" HorizontalAlignment="Right" Margin="0,0,15,0" Cursor="Hand" Click="BtnSendComment_Click">
                                 <TextBlock Text="发送"/>
                             </Button>
                         </Grid>
-                    </StackPanel>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

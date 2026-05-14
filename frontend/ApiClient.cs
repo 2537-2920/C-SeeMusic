@@ -147,6 +147,26 @@ namespace SeeMusicApp
             var apiResponse = JsonConvert.DeserializeObject<ApiResponse<ScoreDetailDto>>(responseBody);
             return apiResponse.Data;
         }
+
+        public async Task<bool> AddCommentAsync(int scoreId, string content)
+        {
+            if (!string.IsNullOrEmpty(AccessToken))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+            }
+
+            var request = new CommentRequest { Content = content };
+            var json = JsonConvert.SerializeObject(request);
+            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync($"{BaseUrl}community/scores/{scoreId}/comments", httpContent);
+            return response.IsSuccessStatusCode;
+        }
+    }
+
+    public class CommentRequest
+    {
+        public string Content { get; set; }
     }
 
     public class ScoreDto

@@ -11,11 +11,37 @@ namespace SeeMusicApp
     public partial class CommunityWindow : Window
     {
         private readonly ApiClient _apiClient = new ApiClient();
+        private int _currentScoreId = -1;
 
         public CommunityWindow()
         {
             InitializeComponent();
             this.Loaded += CommunityWindow_Loaded;
+        }
+
+        private async void BtnSendComment_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentScoreId == -1 || string.IsNullOrWhiteSpace(CommentInput.Text))
+                return;
+
+            try
+            {
+                var success = await _apiClient.AddCommentAsync(_currentScoreId, CommentInput.Text);
+                if (success)
+                {
+                    CommentInput.Clear();
+                    // 刷新详情以显示新评论
+                    await ShowScoreDetail(_currentScoreId);
+                }
+                else
+                {
+                    MessageBox.Show("评论失败，请检查登录状态");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"评论出错: {ex.Message}");
+            }
         }
 
         private async void CommunityWindow_Loaded(object sender, RoutedEventArgs e)
@@ -142,6 +168,7 @@ namespace SeeMusicApp
 
         private async Task ShowScoreDetail(int scoreId)
         {
+            _currentScoreId = scoreId;
             try
             {
                 var detail = await _apiClient.GetScoreDetailAsync(scoreId);
