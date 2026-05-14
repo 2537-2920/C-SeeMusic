@@ -100,10 +100,10 @@ namespace backend.Data
 
             // 为“晴天”添加一些评论
             var qingTian = context.Scores.First(s => s.Title == "晴天");
-            context.Comments.AddRange(new List<Comment>
+            context.ScoreComments.AddRange(new List<ScoreComment>
             {
-                new Comment { ScoreId = qingTian.Id, UserId = admin.Id, Content = "前奏一响，爷青回！", CreatedAt = DateTime.UtcNow.AddDays(-2) },
-                new Comment { ScoreId = qingTian.Id, UserId = admin.Id, Content = "扒谱非常精准，支持！", CreatedAt = DateTime.UtcNow.AddMinutes(-45) }
+                new ScoreComment { ScoreId = qingTian.Id, UserId = admin.Id, Content = "前奏一响，爷青回！", CreatedAt = DateTime.UtcNow.AddDays(-2) },
+                new ScoreComment { ScoreId = qingTian.Id, UserId = admin.Id, Content = "扒谱非常精准，支持！", CreatedAt = DateTime.UtcNow.AddMinutes(-45) }
             });
 
             context.SaveChanges();

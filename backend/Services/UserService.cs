@@ -132,7 +132,7 @@ public class UserService : IUserService
         
         // Calculate dynamic stats
         dto.TranscriptionCount = _dbContext.Scores.Count(s => s.OwnerUserId == userId);
-        dto.FavoriteCount = _dbContext.Favorites.Count(f => f.UserId == userId);
+        dto.FavoriteCount = _dbContext.ScoreFavorites.Count(f => f.UserId == userId);
         dto.EvaluationDurationHours = 12; // Placeholder for now or calculate from some future session table
         
         return dto;

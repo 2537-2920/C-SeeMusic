@@ -136,6 +136,10 @@ public class SeeMusicDbContext : DbContext
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId);
+
+            entity.HasOne<Score>()
+                  .WithMany(s => s.Comments)
+                  .HasForeignKey(e => e.ScoreId);
         });
 
         // 配置 ScoreFavorite

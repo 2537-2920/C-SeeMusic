@@ -7,19 +7,6 @@ using Newtonsoft.Json; // 使用项目中已有的Newtonsoft.Json
 
 namespace SeeMusicApp
 {
-    // 通用 API 响应模型，与后端保持一致
-    public class ApiResponse<T>
-    {
-        [JsonProperty("code")]
-        public int Code { get; set; }
-
-        [JsonProperty("message")]
-        public string Message { get; set; }
-
-        [JsonProperty("data")]
-        public T Data { get; set; }
-    }
-
     // 登录请求模型
     public class LoginRequest
     {
@@ -44,48 +31,6 @@ namespace SeeMusicApp
 
         [JsonProperty("confirmPassword")]
         public string ConfirmPassword { get; set; }
-    }
-
-    // 注册响应模型
-    public class RegisterResponse
-    {
-        [JsonProperty("userId")]
-        public int UserId { get; set; }
-
-        [JsonProperty("username")]
-        public string Username { get; set; }
-    }
-
-    // 登录响应数据模型
-    public class LoginResponse
-    {
-        [JsonProperty("accessToken")]
-        public string AccessToken { get; set; }
-
-        [JsonProperty("refreshToken")]
-        public string RefreshToken { get; set; }
-
-        [JsonProperty("expiresIn")]
-        public int ExpiresIn { get; set; }
-
-        [JsonProperty("user")]
-        public UserDto User { get; set; }
-    }
-
-    // 用户数据模型
-    public class UserDto
-    {
-        [JsonProperty("id")]
-        public int Id { get; set; }
-
-        [JsonProperty("username")]
-        public string Username { get; set; }
-
-        [JsonProperty("displayName")]
-        public string DisplayName { get; set; }
-
-        [JsonProperty("avatarUrl")]
-        public string AvatarUrl { get; set; }
     }
 
     public class ApiClient
@@ -218,5 +163,37 @@ namespace SeeMusicApp
     {
         public string Description { get; set; }
         public string FileUrl { get; set; }
+    }
+
+    public class UserDto
+    {
+        public int Id { get; set; }
+        public string Username { get; set; }
+        public string DisplayName { get; set; }
+        public string Email { get; set; }
+        public string AvatarUrl { get; set; }
+        public string Bio { get; set; }
+        public int TranscriptionCount { get; set; }
+        public int EvaluationDurationHours { get; set; }
+        public int FavoriteCount { get; set; }
+    }
+
+    public class ApiResponse<T>
+    {
+        public int Code { get; set; }
+        public string Message { get; set; }
+        public T Data { get; set; }
+    }
+
+    public class LoginResponse
+    {
+        public string AccessToken { get; set; }
+        public UserDto User { get; set; }
+    }
+
+    public class RegisterResponse
+    {
+        public string Message { get; set; }
+        public UserDto User { get; set; }
     }
 }

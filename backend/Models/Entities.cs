@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace backend.Models;
 
 public sealed class User
@@ -42,34 +45,29 @@ public sealed class Score
     public string? ArtistName { get; set; }
     public string? ArrangementTag { get; set; }
     public string? Description { get; set; }
-    public int? SourceMediaId { get; set; }
-    public int? CoverMediaId { get; set; }
-    public string? KeySignature { get; set; }
-    public string? TimeSignature { get; set; }
-    public int? Tempo { get; set; }
-    public string Status { get; set; } = "draft"; // draft, processing, ready, published
-    public string? SourceType { get; set; }
-    public bool IsPublic { get; set; } = true;
+    public string? FileUrl { get; set; }
+    public string? CoverUrl { get; set; }
     public int PriceCent { get; set; } = 0;
+    public bool IsPublic { get; set; } = true;
+    public string Status { get; set; } = "published";
     public int DownloadCount { get; set; } = 0;
     public int FavoriteCount { get; set; } = 0;
     public int CommentCount { get; set; } = 0;
     public int ShareCount { get; set; } = 0;
-    public string? CoverUrl { get; set; }
     public string? PrimaryCategory { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? PublishedAt { get; set; }
 
     // Navigation properties
     public User? Owner { get; set; }
+    public ICollection<ScoreCategoryRelation> CategoryRelations { get; set; } = new List<ScoreCategoryRelation>();
+    public ICollection<ScoreComment> Comments { get; set; } = new List<ScoreComment>();
 }
 
-public sealed class Category
+public sealed class ScoreCategory
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string Slug { get; set; } = string.Empty;
     public int SortOrder { get; set; } = 0;
 }
 
@@ -77,25 +75,35 @@ public sealed class ScoreCategoryRelation
 {
     public int ScoreId { get; set; }
     public int CategoryId { get; set; }
+    public Score? Score { get; set; }
+    public ScoreCategory? Category { get; set; }
 }
 
-public sealed class Comment
+public sealed class ScoreComment
 {
     public int Id { get; set; }
     public int ScoreId { get; set; }
     public int UserId { get; set; }
     public string Content { get; set; } = string.Empty;
-    public string Status { get; set; } = "visible"; // visible, hidden, deleted
+    public string Status { get; set; } = "visible";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
 
     // Navigation properties
     public User? User { get; set; }
 }
 
-public sealed class Favorite
+public sealed class ScoreFavorite
 {
     public int UserId { get; set; }
     public int ScoreId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class ScoreDownload
+{
+    public int Id { get; set; }
+    public int ScoreId { get; set; }
+    public int UserId { get; set; }
+    public string? IPAddress { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

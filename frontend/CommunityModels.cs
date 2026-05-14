@@ -57,24 +57,4 @@ namespace SeeMusicApp
         public List<CommunityComment> RecentComments { get; set; } = new List<CommunityComment>();
         public string CommentCountText => $"社区评论 ({CommentCount})";
     }
-
-    public class ApiResponse<T>
-    {
-        public int Code { get; set; }
-        public string Message { get; set; }
-        public T Data { get; set; }
-    }
-
-    public class UserDto
-    {
-        public int Id { get; set; }
-        public string Username { get; set; }
-        public string DisplayName { get; set; }
-        public string Email { get; set; }
-        public string AvatarUrl { get; set; }
-        public string Bio { get; set; }
-        public int TranscriptionCount { get; set; }
-        public int EvaluationDurationHours { get; set; }
-        public int FavoriteCount { get; set; }
-    }
 }
