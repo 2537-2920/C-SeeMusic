@@ -30,7 +30,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
 
 builder.Services.AddDbContext<SeeMusicDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+        mysqlOptions => mysqlOptions.EnableRetryOnFailure())
 );
 
 builder.Services.AddAuthentication(options =>
@@ -62,15 +63,26 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<SeeMusicDbContext>();
-    context.Database.Migrate();
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<SeeMusicDbContext>();
+        Console.WriteLine("--> [DB] Attempting to connect and migrate...");
+        context.Database.Migrate();
+        Console.WriteLine("--> [DB] Migration successful.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"--> [DB ERROR] Migration failed: {ex.Message}");
+        if (ex.InnerException != null)
+        {
+            Console.WriteLine($"--> [DB INNER ERROR] {ex.InnerException.Message}");
+        }
+    }
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// 无论什么模式都开启 Swagger，方便调试
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
