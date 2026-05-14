@@ -4,7 +4,7 @@ namespace backend.Services;
 
 public interface IUserService
 {
-    UserDto Register(string username, string email, string password);
+    RegisterResponse Register(string username, string email, string password, string confirmPassword);
     AuthResponse Login(string account, string password);
     AuthResponse RefreshToken(string refreshToken);
     UserDto GetCurrentUser(int userId);

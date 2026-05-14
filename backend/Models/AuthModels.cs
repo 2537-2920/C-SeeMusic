@@ -3,9 +3,16 @@ namespace backend.Models;
 public sealed class RegisterRequest
 {
     public string Username { get; set; } = string.Empty;
+
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+public sealed class RegisterResponse
+{
+    public int UserId { get; set; }
+    public string Username { get; set; } = string.Empty;
 }
 
 public sealed class LoginRequest

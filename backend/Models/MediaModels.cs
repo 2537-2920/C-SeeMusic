@@ -1,6 +1,14 @@
+using Microsoft.AspNetCore.Http;
+
 namespace backend.Models;
 
-public sealed class MediaUploadResponse
+public class MediaUploadRequest
+{
+    public IFormFile File { get; set; } = null!;
+    public string Type { get; set; } = string.Empty;
+}
+
+public class MediaUploadResponse
 {
     public string MediaId { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;
@@ -8,17 +16,20 @@ public sealed class MediaUploadResponse
     public string Type { get; set; } = string.Empty;
 }
 
-public sealed class TranscriptionRequest
+public class TranscriptionRequest
 {
     public string MediaId { get; set; } = string.Empty;
-    public bool SeparateMelody { get; set; }
-    public bool SeparateAccompaniment { get; set; }
 }
 
-public sealed class TranscriptionResult
+public class TranscriptionResult
 {
     public string MediaId { get; set; } = string.Empty;
-    public string Status { get; set; } = "processing";
+    public string Status { get; set; } = string.Empty;
     public string ScoreId { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
+}
+
+public class AvatarUploadRequest
+{
+    public IFormFile File { get; set; } = null!;
 }

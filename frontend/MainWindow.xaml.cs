@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -18,10 +18,24 @@ namespace SeeMusicApp
         }
 
         // 2. 带参数的重载构造函数（供我们从登录界面跳回来时调用）
-        // 注意这里的 : this()，它表示在执行下面代码前，会先去执行上面那个无参构造函数
         public MainWindow(bool isLoggedIn) : this()
         {
-            // 如果传入 true，则直接展示已登录的四大金刚卡片
+            ApplyLoginState(isLoggedIn);
+        }
+
+        public MainWindow(bool isLoggedIn, LoginResponse loginResponse) : this()
+        {
+            ApplyLoginState(isLoggedIn);
+            // 这里可以进一步使用 loginResponse 里的用户信息，例如显示头像、用户名等
+            if (loginResponse?.User != null)
+            {
+                // 示例：给用户打个招呼
+                // MessageBox.Show($"欢迎回来, {loginResponse.User.DisplayName}");
+            }
+        }
+
+        private void ApplyLoginState(bool isLoggedIn)
+        {
             if (isLoggedIn)
             {
                 LoggedOutView.Visibility = Visibility.Collapsed;

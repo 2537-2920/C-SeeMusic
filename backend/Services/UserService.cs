@@ -17,8 +17,13 @@ public class UserService : IUserService
         _tokenProvider = tokenProvider;
     }
 
-    public UserDto Register(string username, string email, string password)
+    public RegisterResponse Register(string username, string email, string password, string confirmPassword)
     {
+        if (password != confirmPassword)
+        {
+            throw new InvalidOperationException("两次输入的密码不一致");
+        }
+
         var existingUser = _dbContext.Users.FirstOrDefault(u => u.Username == username || u.Email == email);
         if (existingUser != null)
         {
@@ -39,7 +44,11 @@ public class UserService : IUserService
         _dbContext.Users.Add(user);
         _dbContext.SaveChanges();
 
-        return MapToUserDto(user);
+        return new RegisterResponse
+        {
+            UserId = user.Id,
+            Username = user.Username,
+        };
     }
 
     public AuthResponse Login(string account, string password)
@@ -118,7 +127,15 @@ public class UserService : IUserService
     {
         var user = _dbContext.Users.Find(userId)
             ?? throw new InvalidOperationException("用户不存在");
-        return MapToUserDto(user);
+        
+        var dto = MapToUserDto(user);
+        
+        // Calculate dynamic stats
+        dto.TranscriptionCount = _dbContext.Scores.Count(s => s.OwnerUserId == userId);
+        dto.FavoriteCount = _dbContext.ScoreFavorites.Count(f => f.UserId == userId);
+        dto.EvaluationDurationHours = 12; // Placeholder for now or calculate from some future session table
+        
+        return dto;
     }
 
     public UserDto UpdateProfile(int userId, UserDto profile)
@@ -134,7 +151,7 @@ public class UserService : IUserService
         }
 
         _dbContext.SaveChanges();
-        return MapToUserDto(user);
+        return GetCurrentUser(userId); // Return updated with stats
     }
 
     private UserDto MapToUserDto(User user)
@@ -145,7 +162,7 @@ public class UserService : IUserService
             Username = user.Username,
             DisplayName = user.DisplayName,
             Email = user.Email,
-            AvatarUrl = user.AvatarUrl ?? string.Empty,
+            AvatarUrl = user.AvatarUrl ?? "https://api.dicebear.com/7.x/avataaars/svg?seed=" + user.Username,
             Bio = user.Bio,
             CreatedAt = user.CreatedAt,
             LastLoginAt = user.LastLoginAt,

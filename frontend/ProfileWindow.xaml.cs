@@ -1,48 +1,164 @@
-﻿using System;
+using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Newtonsoft.Json;
+using Microsoft.Win32;
+using System.IO;
 
 namespace SeeMusicApp
 {
     public partial class ProfileWindow : Window
     {
+        private readonly HttpClient _httpClient = new HttpClient();
+        private const string ApiBaseUrl = "http://localhost:5000/api/v1";
+
         public ProfileWindow()
         {
             InitializeComponent();
+            this.Loaded += ProfileWindow_Loaded;
         }
 
-        // 支持窗口无边框拖拽
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private async void ProfileWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            if (e.ButtonState == MouseButtonState.Pressed)
+            await LoadUserData();
+        }
+
+        private async Task LoadUserData()
+        {
+            try
             {
-                this.DragMove();
+                var response = await _httpClient.GetAsync($"{ApiBaseUrl}/users/me");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse<UserDto>>(json);
+                    
+                    if (apiResponse != null && apiResponse.Data != null)
+                    {
+                        UpdateUI(apiResponse.Data);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load profile: {ex.Message}");
             }
         }
 
-        // 返回主界面
+        private void UpdateUI(UserDto user)
+        {
+            TxtDisplayName.Text = string.IsNullOrEmpty(user.DisplayName) ? user.Username : user.DisplayName;
+            TxtEmail.Text = user.Email;
+            TxtTransCount.Text = user.TranscriptionCount.ToString();
+            TxtEvalHours.Text = user.EvaluationDurationHours.ToString() + "h";
+            TxtFavCount.Text = user.FavoriteCount.ToString();
+
+            if (!string.IsNullOrEmpty(user.AvatarUrl))
+            {
+                try
+                {
+                    string url = user.AvatarUrl.StartsWith("http") ? user.AvatarUrl : "http://localhost:5000" + user.AvatarUrl;
+                    ImgAvatar.ImageSource = new BitmapImage(new Uri(url));
+                }
+                catch { }
+            }
+        }
+
+        // 修改头像
+        private async void BtnEditAvatar_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "图片文件 (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png";
+            
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    using (var content = new MultipartFormDataContent())
+                    {
+                        var fileStream = File.OpenRead(openFileDialog.FileName);
+                        var fileContent = new StreamContent(fileStream);
+                        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+                        content.Add(fileContent, "file", Path.GetFileName(openFileDialog.FileName));
+
+                        var response = await _httpClient.PostAsync($"{ApiBaseUrl}/users/me/avatar", content);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var json = await response.Content.ReadAsStringAsync();
+                            var res = JsonConvert.DeserializeObject<ApiResponse<string>>(json);
+                            await UpdateProfileInfo(res.Data); // 同步到用户信息
+                            MessageBox.Show("头像更新完成！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("头像上传失败: " + ex.Message);
+                }
+            }
+        }
+
+        // 修改个人资料
+        private async void BtnEditProfile_Click(object sender, RoutedEventArgs e)
+        {
+            // 使用 Microsoft.VisualBasic 需要在项目引用中添加
+            try
+            {
+                string newName = Microsoft.VisualBasic.Interaction.InputBox("请输入新的昵称：", "修改资料", TxtDisplayName.Text);
+                if (!string.IsNullOrEmpty(newName))
+                {
+                    await UpdateProfileInfo(null, newName);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("弹出输入框失败，请检查是否添加了 Microsoft.VisualBasic 引用。\n错误详情：" + ex.Message);
+            }
+        }
+
+        private async Task UpdateProfileInfo(string avatarUrl = null, string displayName = null)
+        {
+            try
+            {
+                var updateDto = new UserDto { 
+                    DisplayName = displayName ?? TxtDisplayName.Text,
+                    AvatarUrl = avatarUrl 
+                };
+                
+                var content = new StringContent(JsonConvert.SerializeObject(updateDto), System.Text.Encoding.UTF8, "application/json");
+                var response = await _httpClient.PutAsync($"{ApiBaseUrl}/users/me", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadUserData();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("同步资料失败: " + ex.Message);
+            }
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed) this.DragMove();
+        }
+
         private void BtnGoHome_Click(object sender, RoutedEventArgs e)
         {
             MainWindow mainWin = new MainWindow(true);
             mainWin.Show();
-            this.Close(); // 关闭当前的个人中心窗口
+            this.Close();
         }
 
-        // 模拟清除系统缓存的动态逻辑
         private async void BtnClearCache_Click(object sender, RoutedEventArgs e)
         {
-            // 如果缓存已经是 0KB，就不再执行了
-            if (TxtCache.Text == "清除系统缓存 (0KB)")
-            {
-                MessageBox.Show("系统缓存已经很干净啦！", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // 修改文本状态
+            if (TxtCache.Text == "清除系统缓存 (0KB)") return;
             TxtCache.Text = "正在清理缓存中...";
-            TxtCache.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F59E0B")); // 变成橙色
 
             // 模拟后台删除文件的耗时
             await Task.Delay(1200);
