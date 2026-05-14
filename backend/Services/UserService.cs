@@ -17,8 +17,13 @@ public class UserService : IUserService
         _tokenProvider = tokenProvider;
     }
 
-    public UserDto Register(string username, string email, string password)
+    public RegisterResponse Register(string username, string email, string password, string confirmPassword)
     {
+        if (password != confirmPassword)
+        {
+            throw new InvalidOperationException("两次输入的密码不一致");
+        }
+
         var existingUser = _dbContext.Users.FirstOrDefault(u => u.Username == username || u.Email == email);
         if (existingUser != null)
         {
@@ -39,7 +44,11 @@ public class UserService : IUserService
         _dbContext.Users.Add(user);
         _dbContext.SaveChanges();
 
-        return MapToUserDto(user);
+        return new RegisterResponse
+        {
+            UserId = user.Id,
+            Username = user.Username,
+        };
     }
 
     public AuthResponse Login(string account, string password)

@@ -11,6 +11,7 @@ public sealed class User
     public string Bio { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastLoginAt { get; set; } = DateTime.UtcNow;
+    public string Status { get; set; } = string.Empty;
 }
 
 public sealed class RefreshToken

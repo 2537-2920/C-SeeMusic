@@ -139,13 +139,13 @@
 
                         <TextBlock Text="用户名" FontSize="12" FontWeight="Bold" Foreground="#888" Margin="5,0,0,5"/>
                         <Grid Margin="0,0,0,15">
-                            <TextBox Style="{StaticResource InputBoxStyle}"/>
+                            <TextBox x:Name="TxtAccount" Style="{StaticResource InputBoxStyle}"/>
                             <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA" FontSize="16" VerticalAlignment="Center" Margin="15,0,0,0"/>
                         </Grid>
 
                         <TextBlock Text="密码" FontSize="12" FontWeight="Bold" Foreground="#888" Margin="5,0,0,5"/>
                         <Grid Margin="0,0,0,15">
-                            <PasswordBox Style="{StaticResource InputBoxStyle}"/>
+                            <PasswordBox x:Name="PbPassword" Style="{StaticResource InputBoxStyle}"/>
                             <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA" FontSize="16" VerticalAlignment="Center" Margin="15,0,0,0"/>
                         </Grid>
 
