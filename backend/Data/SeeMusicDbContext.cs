@@ -12,27 +12,21 @@ public class SeeMusicDbContext : DbContext
     /// 用户实体集合
     /// </summary>
     public DbSet<User> Users { get; set; }
-    /// <summary>
-    /// 刷新令牌实体集合
-    /// </summary>
     public DbSet<RefreshToken> RefreshTokens { get; set; }
-    /// <summary>
-    /// 媒体文件实体集合
-    /// </summary>
     public DbSet<MediaFile> MediaFiles { get; set; }
+    
+    // 社区相关
+    public DbSet<Score> Scores { get; set; }
+    public DbSet<ScoreCategory> ScoreCategories { get; set; }
+    public DbSet<ScoreCategoryRelation> ScoreCategoryRelations { get; set; }
+    public DbSet<ScoreComment> ScoreComments { get; set; }
+    public DbSet<ScoreFavorite> ScoreFavorites { get; set; }
+    public DbSet<ScoreDownload> ScoreDownloads { get; set; }
 
-    /// <summary>
-    /// 初始化 SeeMusicDbContext 实例
-    /// </summary>
-    /// <param name="options">数据库上下文配置选项</param>
     public SeeMusicDbContext(DbContextOptions<SeeMusicDbContext> options) : base(options)
     {
     }
 
-    /// <summary>
-    /// 配置实体模型的结构，定义表关系和约束
-    /// </summary>
-    /// <param name="modelBuilder">模型构建器，用于配置实体类型</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -40,6 +34,7 @@ public class SeeMusicDbContext : DbContext
         // 配置 User 实体的模型属性
         modelBuilder.Entity<User>(entity =>
         {
+            entity.ToTable("users");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Username).IsRequired().HasMaxLength(50).HasColumnName("username");
             entity.Property(e => e.Email).IsRequired().HasMaxLength(100).HasColumnName("email");
@@ -69,6 +64,7 @@ public class SeeMusicDbContext : DbContext
         // 配置 MediaFile 实体的模型属性
         modelBuilder.Entity<MediaFile>(entity =>
         {
+            entity.ToTable("media_assets"); // 对应数据库中的 media_assets 表
             entity.HasKey(e => e.Id);
             entity.Property(e => e.MediaId).IsRequired().HasMaxLength(50).HasColumnName("media_id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
@@ -78,5 +74,88 @@ public class SeeMusicDbContext : DbContext
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.MediaId).IsUnique();
         });
+
+        // 配置 Score
+        modelBuilder.Entity<Score>(entity =>
+        {
+            entity.ToTable("scores");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200).HasColumnName("title");
+            entity.Property(e => e.ArtistName).HasMaxLength(100).HasColumnName("artist_name");
+            entity.Property(e => e.ArrangementTag).HasMaxLength(50).HasColumnName("arrangement_tag");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.OwnerUserId).HasColumnName("owner_user_id");
+            entity.Property(e => e.CoverUrl).HasColumnName("cover_url");
+            entity.Property(e => e.FileUrl).HasColumnName("file_url");
+            entity.Property(e => e.PriceCent).HasColumnName("price_cent");
+            entity.Property(e => e.IsPublic).HasColumnName("is_public");
+            entity.Property(e => e.DownloadCount).HasColumnName("download_count");
+            entity.Property(e => e.FavoriteCount).HasColumnName("favorite_count");
+            entity.Property(e => e.CommentCount).HasColumnName("comment_count");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        // 配置 ScoreCategory
+        modelBuilder.Entity<ScoreCategory>(entity =>
+        {
+            entity.ToTable("score_categories");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50).HasColumnName("name");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+        });
+
+        // 配置 ScoreCategoryRelation
+        modelBuilder.Entity<ScoreCategoryRelation>(entity =>
+        {
+            entity.ToTable("score_category_relations");
+            entity.HasKey(e => new { e.ScoreId, e.CategoryId });
+            entity.Property(e => e.ScoreId).HasColumnName("score_id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            
+            entity.HasOne(e => e.Score).WithMany(s => s.CategoryRelations).HasForeignKey(e => e.ScoreId);
+            entity.HasOne(e => e.Category).WithMany().HasForeignKey(e => e.CategoryId);
+        });
+
+        // 配置 ScoreComment
+        modelBuilder.Entity<ScoreComment>(entity =>
+        {
+            entity.ToTable("score_comments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(1000).HasColumnName("content");
+            entity.Property(e => e.ScoreId).HasColumnName("score_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.Status).HasColumnName("status");
+        });
+
+        // 配置 ScoreFavorite
+        modelBuilder.Entity<ScoreFavorite>(entity =>
+        {
+            entity.ToTable("score_favorites");
+            entity.HasKey(e => new { e.UserId, e.ScoreId });
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.ScoreId).HasColumnName("score_id");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+        });
+
+        // 配置 ScoreDownload
+        modelBuilder.Entity<ScoreDownload>(entity =>
+        {
+            entity.ToTable("score_downloads");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ScoreId).HasColumnName("score_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.IPAddress).HasColumnName("source_ip");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+        });
+
+        // 种子数据：初始分类
+        modelBuilder.Entity<ScoreCategory>().HasData(
+            new ScoreCategory { Id = 1, Name = "流行", SortOrder = 1 },
+            new ScoreCategory { Id = 2, Name = "古典", SortOrder = 2 },
+            new ScoreCategory { Id = 3, Name = "爵士", SortOrder = 3 },
+            new ScoreCategory { Id = 4, Name = "ACG", SortOrder = 4 }
+        );
     }
 }

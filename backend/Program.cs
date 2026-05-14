@@ -94,10 +94,29 @@ using (var scope = app.Services.CreateScope())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+app.UseStaticFiles();
+// app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("\n" + new string('!', 50));
+        Console.WriteLine($"[GLOBAL ERROR] {DateTime.Now}");
+        Console.WriteLine($"Path: {context.Request.Path}");
+        Console.WriteLine($"Error: {ex.Message}");
+        if (ex.InnerException != null) Console.WriteLine($"Inner: {ex.InnerException.Message}");
+        Console.WriteLine(new string('!', 50) + "\n");
+        throw;
+    }
+});
+
 app.MapControllers();
 
 app.Run();

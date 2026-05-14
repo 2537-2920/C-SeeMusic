@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,6 +28,32 @@ namespace SeeMusicApp
 
         [JsonProperty("password")]
         public string Password { get; set; }
+    }
+
+    // 注册请求模型
+    public class RegisterRequest
+    {
+        [JsonProperty("username")]
+        public string Username { get; set; }
+
+        [JsonProperty("email")]
+        public string Email { get; set; }
+
+        [JsonProperty("password")]
+        public string Password { get; set; }
+
+        [JsonProperty("confirmPassword")]
+        public string ConfirmPassword { get; set; }
+    }
+
+    // 注册响应模型
+    public class RegisterResponse
+    {
+        [JsonProperty("userId")]
+        public int UserId { get; set; }
+
+        [JsonProperty("username")]
+        public string Username { get; set; }
     }
 
     // 登录响应数据模型
@@ -108,6 +135,88 @@ namespace SeeMusicApp
             }
         }
 
-        // 可以在这里添加其他 API 调用方法
+        public async Task<RegisterResponse> RegisterAsync(string username, string email, string password, string confirmPassword)
+        {
+            var registerRequest = new RegisterRequest 
+            { 
+                Username = username, 
+                Email = email, 
+                Password = password, 
+                ConfirmPassword = confirmPassword 
+            };
+            var jsonContent = JsonConvert.SerializeObject(registerRequest);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(BaseUrl + "auth/register", content);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<RegisterResponse>>(responseBody);
+
+            if (apiResponse.Code == 0)
+            {
+                return apiResponse.Data;
+            }
+            else
+            {
+                throw new Exception(apiResponse.Message);
+            }
+        }
+
+        public static string AccessToken { get; set; } // 存储登录后的 Token
+
+        public async Task<T> PostMultipartAsync<T>(string endpoint, MultipartFormDataContent content)
+        {
+            if (!string.IsNullOrEmpty(AccessToken))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+            }
+
+            var response = await _httpClient.PostAsync(BaseUrl + endpoint, content);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"服务器返回错误: {response.StatusCode} - {responseBody}");
+            }
+
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(responseBody);
+            return apiResponse.Data;
+        }
+
+        public async Task<List<ScoreDto>> GetScoresAsync(string keyword = null, string category = null)
+        {
+            var url = $"{BaseUrl}community/scores?keyword={keyword}&category={category}";
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<List<ScoreDto>>>(responseBody);
+            return apiResponse.Data;
+        }
+
+        public async Task<ScoreDetailDto> GetScoreDetailAsync(int scoreId)
+        {
+            var response = await _httpClient.GetAsync($"{BaseUrl}community/scores/{scoreId}");
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<ScoreDetailDto>>(responseBody);
+            return apiResponse.Data;
+        }
+    }
+
+    public class ScoreDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string AuthorName { get; set; }
+        public string CoverUrl { get; set; }
+        public int Price { get; set; }
+        public int DownloadCount { get; set; }
+    }
+
+    public class ScoreDetailDto : ScoreDto
+    {
+        public string Description { get; set; }
+        public string FileUrl { get; set; }
     }
 }

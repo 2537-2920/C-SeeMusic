@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -144,8 +145,10 @@ namespace SeeMusicApp
                     // 登录成功
                     MessageBox.Show($"登录成功！欢迎回来，{loginResponse.User.DisplayName ?? loginResponse.User.Username}。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    // 核心修改：实例化主界面，并传入 true 告诉主界面显示已登录状态！
-                    // 暂时将 loginResponse 传递给 MainWindow，后续可以实现 Token 存储
+                    // 核心修改：存储 Token 供后续 API 调用使用
+                    ApiClient.AccessToken = loginResponse.AccessToken;
+
+                    // 实例化主界面，并传入 true 告诉主界面显示已登录状态！
                     MainWindow mainWin = new MainWindow(true, loginResponse);
                     mainWin.Show();
                     this.Close();
@@ -158,10 +161,31 @@ namespace SeeMusicApp
             }
             else
             {
-                // 注册逻辑（目前是模拟的，后续可以实现注册 API 调用）
-                MessageBox.Show("注册成功！请使用新账号登录。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
-                // 注册成功后，自动帮你切换回登录模式
-                SwitchModeLogic();
+                try
+                {
+                    string username = TxtAccount.Text;
+                    string email = TxtEmail.Text;
+                    string password = PbPassword.Password;
+                    string confirm = PbConfirmPassword.Password;
+
+                    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                    {
+                        MessageBox.Show("请完整填写注册信息。", "注册失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    // 调用真实 API 注册
+                    await _apiClient.RegisterAsync(username, email, password, confirm);
+
+                    MessageBox.Show("注册成功！请使用新账号登录。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
+                    
+                    // 注册成功后，自动帮你切换回登录模式
+                    SwitchModeLogic();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"注册失败: {ex.Message}", "注册错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -174,6 +198,7 @@ namespace SeeMusicApp
             {
                 TxtTitle.Text = "欢迎回来";
                 TxtSubtitle.Text = "让灵感在五线谱上自由流淌";
+                EmailPanel.Visibility = Visibility.Collapsed;
                 ConfirmPwdPanel.Visibility = Visibility.Collapsed;
 
                 TxtSubmit.Text = "立即登录";
@@ -186,6 +211,7 @@ namespace SeeMusicApp
             {
                 TxtTitle.Text = "加入 SeeMusic";
                 TxtSubtitle.Text = "开启您的智能音乐创作之旅";
+                EmailPanel.Visibility = Visibility.Visible;
                 ConfirmPwdPanel.Visibility = Visibility.Visible;
 
                 TxtSubmit.Text = "注册账号";
