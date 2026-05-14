@@ -57,7 +57,7 @@ public class CommunityService : ICommunityService
             .ToListAsync();
     }
 
-    public async Task<ScoreDetailDto?> GetScoreDetailAsync(int scoreId)
+    public async Task<ScoreDetailDto?> GetScoreDetailAsync(int scoreId, int? userId = null)
     {
         var score = await _context.Scores
             .Include(s => s.Comments.OrderByDescending(c => c.CreatedAt).Take(5))
@@ -65,6 +65,14 @@ public class CommunityService : ICommunityService
             .FirstOrDefaultAsync(s => s.Id == scoreId);
 
         if (score == null) return null;
+
+        var isFavorited = false;
+        if (userId.HasValue)
+        {
+            // 使用更显式的 Count 方式查询，防止某些驱动下的 AnyAsync 优化问题
+            isFavorited = await _context.ScoreFavorites
+                .CountAsync(f => f.ScoreId == scoreId && f.UserId == userId.Value) > 0;
+        }
 
         return new ScoreDetailDto
         {
@@ -79,10 +87,11 @@ public class CommunityService : ICommunityService
             Description = score.Description,
             FileUrl = score.FileUrl,
             CommentCount = score.CommentCount,
+            IsFavorited = isFavorited,
             RecentComments = score.Comments.Select(c => new CommentDto
             {
                 Id = c.Id,
-                UserName = c.User.DisplayName ?? c.User.Username,
+                UserName = c.User?.DisplayName ?? c.User?.Username ?? "Unknown",
                 Content = c.Content,
                 CreatedAt = c.CreatedAt
             }).ToList()

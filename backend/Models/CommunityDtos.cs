@@ -21,6 +21,7 @@ public class ScoreDetailDto : ScoreDto
     public string? Description { get; set; }
     public string? FileUrl { get; set; }
     public int CommentCount { get; set; }
+    public bool IsFavorited { get; set; }
     public List<CommentDto> RecentComments { get; set; } = new();
 }
 

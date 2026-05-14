@@ -110,12 +110,15 @@ namespace SeeMusicApp
 
         public async Task<T> PostMultipartAsync<T>(string endpoint, MultipartFormDataContent content)
         {
+            var request = new HttpRequestMessage(HttpMethod.Post, BaseUrl + endpoint);
+            request.Content = content;
+
             if (!string.IsNullOrEmpty(AccessToken))
             {
-                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
             }
 
-            var response = await _httpClient.PostAsync(BaseUrl + endpoint, content);
+            var response = await _httpClient.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
             
             if (!response.IsSuccessStatusCode)
@@ -130,7 +133,14 @@ namespace SeeMusicApp
         public async Task<List<ScoreDto>> GetScoresAsync(string keyword = null, string category = null)
         {
             var url = $"{BaseUrl}community/scores?keyword={keyword}&category={category}";
-            var response = await _httpClient.GetAsync(url);
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            
+            if (!string.IsNullOrEmpty(AccessToken))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+            }
+
+            var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -140,7 +150,15 @@ namespace SeeMusicApp
 
         public async Task<ScoreDetailDto> GetScoreDetailAsync(int scoreId)
         {
-            var response = await _httpClient.GetAsync($"{BaseUrl}community/scores/{scoreId}");
+            var url = $"{BaseUrl}community/scores/{scoreId}";
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+            if (!string.IsNullOrEmpty(AccessToken))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+            }
+
+            var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -150,16 +168,42 @@ namespace SeeMusicApp
 
         public async Task<bool> AddCommentAsync(int scoreId, string content)
         {
+            var url = $"{BaseUrl}community/scores/{scoreId}/comments";
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            
+            var commentReq = new CommentRequest { Content = content };
+            var json = JsonConvert.SerializeObject(commentReq);
+            request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
             if (!string.IsNullOrEmpty(AccessToken))
             {
-                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
             }
 
-            var request = new CommentRequest { Content = content };
-            var json = JsonConvert.SerializeObject(request);
-            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
 
-            var response = await _httpClient.PostAsync($"{BaseUrl}community/scores/{scoreId}/comments", httpContent);
+        public async Task<bool> ToggleFavoriteAsync(int scoreId, bool isFavorite)
+        {
+            var url = $"{BaseUrl}community/scores/{scoreId}/favorite";
+            HttpRequestMessage request;
+            
+            if (isFavorite)
+            {
+                request = new HttpRequestMessage(HttpMethod.Post, url);
+            }
+            else
+            {
+                request = new HttpRequestMessage(HttpMethod.Delete, url);
+            }
+
+            if (!string.IsNullOrEmpty(AccessToken))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+            }
+
+            var response = await _httpClient.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
     }
@@ -171,28 +215,58 @@ namespace SeeMusicApp
 
     public class ScoreDto
     {
+        [JsonProperty("id")]
         public int Id { get; set; }
+
+        [JsonProperty("title")]
         public string Title { get; set; }
+
+        [JsonProperty("authorName")]
         public string AuthorName { get; set; }
+
+        [JsonProperty("coverUrl")]
         public string CoverUrl { get; set; }
+
+        [JsonProperty("price")]
         public int Price { get; set; }
+
+        [JsonProperty("downloadCount")]
         public int DownloadCount { get; set; }
+
+        [JsonProperty("favoriteCount")]
         public int FavoriteCount { get; set; }
     }
 
     public class ScoreDetailDto : ScoreDto
     {
+        [JsonProperty("description")]
         public string Description { get; set; }
+
+        [JsonProperty("fileUrl")]
         public string FileUrl { get; set; }
+
+        [JsonProperty("commentCount")]
         public int CommentCount { get; set; }
+
+        [JsonProperty("isFavorited")]
+        public bool IsFavorited { get; set; }
+
+        [JsonProperty("recentComments")]
         public List<CommentDto> RecentComments { get; set; }
     }
 
     public class CommentDto
     {
+        [JsonProperty("id")]
         public int Id { get; set; }
+
+        [JsonProperty("userName")]
         public string UserName { get; set; }
+
+        [JsonProperty("content")]
         public string Content { get; set; }
+
+        [JsonProperty("createdAt")]
         public DateTime CreatedAt { get; set; }
     }
 

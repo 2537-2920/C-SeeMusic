@@ -50,8 +50,45 @@ public class CommunityController : ControllerBase
     [HttpGet("scores/{scoreId}")]
     public async Task<ActionResult<ApiResponse<ScoreDetailDto>>> GetScoreDetail(int scoreId)
     {
-        var detail = await _communityService.GetScoreDetailAsync(scoreId);
+        int? userId = null;
+        
+        // 尝试从不同的地方获取 Token 并解析
+        var authHeader = Request.Headers["Authorization"].ToString();
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+        {
+            try
+            {
+                var token = authHeader.Substring("Bearer ".Length);
+                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+                
+                // 遍历所有 Claim，寻找 ID
+                var idClaim = jwtToken.Claims.FirstOrDefault(c => 
+                    c.Type == "id" || 
+                    c.Type == "sub" || 
+                    c.Type == "nameid" || 
+                    c.Type == System.Security.Claims.ClaimTypes.NameIdentifier ||
+                    c.Type.EndsWith("nameidentifier") ||
+                    c.Type.EndsWith("id"));
+
+                if (idClaim != null && int.TryParse(idClaim.Value, out var id))
+                {
+                    userId = id;
+                }
+            }
+            catch { }
+        }
+
+        // 如果上面没拿到，再试一次 User 对象
+        if (userId == null && User.Identity?.IsAuthenticated == true)
+        {
+            var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
+            if (idClaim != null && int.TryParse(idClaim.Value, out var id)) userId = id;
+        }
+        
+        var detail = await _communityService.GetScoreDetailAsync(scoreId, userId);
         if (detail == null) return NotFound(new ApiResponse<ScoreDetailDto> { Code = 40401, Message = "Score not found" });
+        
         return Ok(new ApiResponse<ScoreDetailDto> { Data = detail });
     }
 

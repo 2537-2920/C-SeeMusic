@@ -277,7 +277,7 @@
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
                                         <TextBlock x:Name="DetailFavoriteCount" Text="0" FontSize="14" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                        <Button Background="Transparent" BorderThickness="0" Cursor="Hand">
+                                        <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnFavorite_Click">
                                             <TextBlock x:Name="DetailFavoriteIcon" Text="&#xEB52;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#CBD5E1"/>
                                         </Button>
                                     </StackPanel>

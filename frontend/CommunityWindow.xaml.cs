@@ -12,11 +12,69 @@ namespace SeeMusicApp
     {
         private readonly ApiClient _apiClient = new ApiClient();
         private int _currentScoreId = -1;
+        private bool _isCurrentScoreFavorited = false;
 
         public CommunityWindow()
         {
             InitializeComponent();
             this.Loaded += CommunityWindow_Loaded;
+        }
+
+        private async void BtnFavorite_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentScoreId == -1) return;
+
+            // 乐观更新：立刻切换 UI 状态，不给用户延迟感
+            bool originalState = _isCurrentScoreFavorited;
+            _isCurrentScoreFavorited = !_isCurrentScoreFavorited;
+            UpdateFavoriteUI(_isCurrentScoreFavorited);
+
+            try
+            {
+                var success = await _apiClient.ToggleFavoriteAsync(_currentScoreId, _isCurrentScoreFavorited);
+                if (success)
+                {
+                    // 手动更新界面上的计数值
+                    if (int.TryParse(DetailFavoriteCount.Text.Replace("k", ""), out int currentCount))
+                    {
+                        int newCount = _isCurrentScoreFavorited ? currentCount + 1 : Math.Max(0, currentCount - 1);
+                        DetailFavoriteCount.Text = FormatCount(newCount);
+                    }
+
+                    // 等待一小会儿确保数据库写入完全完成再刷新
+                    await Task.Delay(150); 
+                    await ShowScoreDetail(_currentScoreId);
+                    await LoadScores(); 
+                }
+                else
+                {
+                    // 失败了则回滚状态
+                    _isCurrentScoreFavorited = originalState;
+                    UpdateFavoriteUI(_isCurrentScoreFavorited);
+                    MessageBox.Show("操作失败：请确认是否已登录。");
+                }
+            }
+            catch (Exception ex)
+            {
+                // 出错了则回滚状态
+                _isCurrentScoreFavorited = originalState;
+                UpdateFavoriteUI(_isCurrentScoreFavorited);
+                MessageBox.Show($"点赞出错: {ex.Message}");
+            }
+        }
+
+        private void UpdateFavoriteUI(bool isFavorited)
+        {
+            if (isFavorited)
+            {
+                DetailFavoriteIcon.Text = "\uEB52"; // 实心
+                DetailFavoriteIcon.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(230, 57, 70)); // 红色
+            }
+            else
+            {
+                DetailFavoriteIcon.Text = "\uEB51"; // 空心
+                DetailFavoriteIcon.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(203, 213, 225)); // 灰色
+            }
         }
 
         private async void BtnSendComment_Click(object sender, RoutedEventArgs e)
@@ -157,7 +215,7 @@ namespace SeeMusicApp
             var statsStack = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             
             // 收藏数
-            statsStack.Children.Add(new TextBlock { Text = "", FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,4,0) });
+            statsStack.Children.Add(new TextBlock { Text = "\uEB52", FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,4,0) });
             statsStack.Children.Add(new TextBlock { Text = FormatCount(score.FavoriteCount), FontSize = 12, Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(148, 163, 184)), VerticalAlignment = VerticalAlignment.Center });
             
             priceGrid.Children.Add(statsStack);
@@ -179,6 +237,10 @@ namespace SeeMusicApp
                 DetailFavoriteCount.Text = FormatCount(detail.FavoriteCount);
                 DetailCommentHeader.Text = $"社区评论 ({detail.CommentCount})";
 
+                // 更新点赞状态和 UI
+                _isCurrentScoreFavorited = detail.IsFavorited;
+                UpdateFavoriteUI(_isCurrentScoreFavorited);
+
                 // 填充评论
                 DetailCommentsPanel.Children.Clear();
                 foreach (var comment in detail.RecentComments)
@@ -189,7 +251,10 @@ namespace SeeMusicApp
                 DetailEmptyState.Visibility = Visibility.Collapsed;
                 DetailContentState.Visibility = Visibility.Visible;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"获取详情失败: {ex.Message}");
+            }
         }
 
         private UIElement CreateCommentItem(CommentDto comment)
