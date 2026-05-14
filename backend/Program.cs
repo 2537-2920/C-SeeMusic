@@ -1,7 +1,9 @@
 using backend.Auth;
 using backend.Data;
 using backend.Extensions;
+using backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -56,6 +58,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.Configure<EvaluationProcessingOptions>(
+    builder.Configuration.GetSection("EvaluationProcessing"));
 builder.Services.AddApplicationServices();
 
 var app = builder.Build();
@@ -63,7 +67,14 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<SeeMusicDbContext>();
-    context.Database.Migrate();
+    if (context.Database.GetMigrations().Any())
+    {
+        context.Database.Migrate();
+    }
+    else
+    {
+        context.Database.EnsureCreated();
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -73,6 +84,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+var uploadsDirectory = Path.Combine(app.Environment.ContentRootPath, "uploads");
+Directory.CreateDirectory(uploadsDirectory);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsDirectory),
+    RequestPath = "/uploads"
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

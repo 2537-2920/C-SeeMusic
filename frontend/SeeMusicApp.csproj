@@ -40,9 +40,11 @@
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
@@ -58,6 +60,7 @@
     <Compile Include="CommunityWindow.xaml.cs">
       <DependentUpon>CommunityWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Models\ApiContracts.cs" />
     <Compile Include="LoginWindow.xaml.cs">
       <DependentUpon>LoginWindow.xaml</DependentUpon>
     </Compile>
@@ -70,6 +73,7 @@
     <Compile Include="SingingEvaluationWindow.xaml.cs">
       <DependentUpon>SingingEvaluationWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Services\AnalysisApiClient.cs" />
     <Page Include="CommunityWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

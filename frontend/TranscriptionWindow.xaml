@@ -136,7 +136,7 @@
 
                     <Line Y1="10" Y2="30" Stroke="#E2E8F0" StrokeThickness="1" Margin="15,0,5,0"/>
                     <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" Foreground="#457b9d" FontSize="16" Margin="15,0,5,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="未命名项目.musicxml" Foreground="#666" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtProjectFileName" Text="未命名项目.musicxml" Foreground="#666" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
@@ -199,7 +199,7 @@
                                     <RowDefinition Height="80"/>
                                 </Grid.RowDefinitions>
 
-                                <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ActiveToolBtnStyle}">
+                                <Button x:Name="BtnPickAudio" Grid.Row="0" Grid.Column="0" Style="{StaticResource ActiveToolBtnStyle}" Click="BtnPickAudio_Click">
                                     <StackPanel>
                                         <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,5"/>
                                         <TextBlock Text="本地音频" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center"/>
@@ -225,6 +225,13 @@
                                 </Button>
                             </Grid>
 
+                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,15">
+                                <StackPanel>
+                                    <TextBlock x:Name="TxtSelectedAudio" Text="还没有选择音频文件" FontSize="12" FontWeight="Bold" Foreground="#334155" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="TxtTranscriptionStatus" Text="等待选择本地音频" FontSize="11" Foreground="#64748B" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
                             <Border Background="#F0F7FA" BorderBrush="#E0F0F5" BorderThickness="1" CornerRadius="16" Padding="15" Margin="0,0,0,15">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
@@ -233,16 +240,24 @@
                                     </StackPanel>
                                     <Grid Margin="0,5">
                                         <TextBlock Text="旋律分离" FontSize="12" Foreground="#666"/>
-                                        <CheckBox IsChecked="True" HorizontalAlignment="Right"/>
+                                        <CheckBox x:Name="ChkSeparateMelody" IsChecked="True" HorizontalAlignment="Right"/>
                                     </Grid>
                                     <Grid Margin="0,5">
                                         <TextBlock Text="伴奏分离" FontSize="12" Foreground="#666"/>
-                                        <CheckBox IsChecked="True" HorizontalAlignment="Right"/>
+                                        <CheckBox x:Name="ChkSeparateAccompaniment" IsChecked="True" HorizontalAlignment="Right"/>
                                     </Grid>
                                     <Grid Margin="0,5">
                                         <TextBlock Text="节奏分析" FontSize="12" Foreground="#666"/>
-                                        <CheckBox IsChecked="True" HorizontalAlignment="Right"/>
+                                        <CheckBox x:Name="ChkRhythmAnalysis" IsChecked="True" HorizontalAlignment="Right"/>
                                     </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="16" Padding="15" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <TextBlock Text="节拍摘要" FontSize="11" FontWeight="Bold" Foreground="#A0AEC0" Margin="0,0,0,8"/>
+                                    <TextBlock x:Name="TxtBeatAnalysisSummary" Text="分析结果会显示在这里。" FontSize="12" Foreground="#475569" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                    <TextBlock x:Name="TxtBeatTimesPreview" Text="拍点预览: --" FontSize="11" Foreground="#64748B" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
 
@@ -259,7 +274,7 @@
                                 </Border>
                             </StackPanel>
 
-                            <Button Background="#457b9d" Foreground="White" FontWeight="Bold" Padding="0,12" BorderThickness="0" Cursor="Hand">
+                            <Button x:Name="BtnAnalyzeAudio" Background="#457b9d" Foreground="White" FontWeight="Bold" Padding="0,12" BorderThickness="0" Cursor="Hand" Click="BtnAnalyzeAudio_Click">
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="12"/>
@@ -276,7 +291,7 @@
                             <Border Background="White" BorderBrush="#F1F5F9" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,8">
                                 <Grid>
                                     <TextBlock Text="&#xE8D6;" FontFamily="Segoe MDL2 Assets" Foreground="#457b9d" VerticalAlignment="Center"/>
-                                    <TextBlock Text="主旋律 (Piano)" FontSize="12" FontWeight="Bold" Margin="25,0,0,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="TxtTrackName" Text="主旋律 (Piano)" FontSize="12" FontWeight="Bold" Margin="25,0,0,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" Foreground="#CCC" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>
@@ -329,13 +344,13 @@
                                 <Border Background="#F8FAFC" BorderBrush="#F1F5F9" BorderThickness="1" CornerRadius="8" Padding="12,4" Margin="0,0,8,0">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="拍号" FontSize="12" FontWeight="Bold" Foreground="#999" Margin="0,0,5,0"/>
-                                        <TextBlock Text="4/4" FontSize="12" FontWeight="Black" Foreground="#1d3557"/>
+                                        <TextBlock x:Name="TxtDetectedTimeSignature" Text="--/--" FontSize="12" FontWeight="Black" Foreground="#1d3557"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="#F8FAFC" BorderBrush="#F1F5F9" BorderThickness="1" CornerRadius="8" Padding="12,4">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="BPM" FontSize="12" FontWeight="Bold" Foreground="#999" Margin="0,0,5,0"/>
-                                        <TextBlock Text="120" FontSize="12" FontWeight="Black" Foreground="#1d3557"/>
+                                        <TextBlock x:Name="TxtDetectedBpm" Text="--" FontSize="12" FontWeight="Black" Foreground="#1d3557"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

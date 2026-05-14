@@ -12,10 +12,12 @@ namespace backend.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IEvaluationService _evaluationService;
 
-    public UsersController(IUserService userService)
+    public UsersController(IUserService userService, IEvaluationService evaluationService)
     {
         _userService = userService;
+        _evaluationService = evaluationService;
     }
 
     [HttpGet("me")]
@@ -41,6 +43,17 @@ public class UsersController : ControllerBase
             return BadRequest(new ApiResponse<string> { Code = 40001, Message = "file required" });
 
         return Ok(new ApiResponse<string> { Data = "avatar-uploaded" });
+    }
+
+    [HttpGet("me/evaluations")]
+    public async Task<ActionResult<ApiResponse<EvaluationHistoryResponse>>> GetEvaluationHistory(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var history = await _evaluationService.GetHistoryAsync(userId, page, pageSize, cancellationToken);
+        return Ok(new ApiResponse<EvaluationHistoryResponse> { Data = history });
     }
 
     private int GetCurrentUserId()

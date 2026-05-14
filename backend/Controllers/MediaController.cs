@@ -19,23 +19,25 @@ public class MediaController : ControllerBase
     }
 
     [HttpPost("upload")]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<MediaUploadResponse>>> Upload([FromForm] IFormFile file, [FromForm] string type)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new ApiResponse<MediaUploadResponse> { Code = 40001, Message = "file required" });
 
-        var userId = GetCurrentUserId();
+        var userId = TryGetCurrentUserId();
         var result = await _mediaService.UploadAsync(file, type, userId);
         return Ok(new ApiResponse<MediaUploadResponse> { Data = result });
     }
 
-    private int GetCurrentUserId()
+    private int TryGetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
         {
-            throw new InvalidOperationException("Invalid user");
+            return 0;
         }
+
         return userId;
     }
 }
