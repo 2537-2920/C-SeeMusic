@@ -184,6 +184,7 @@ public class MediaService : IMediaService
             ".wav" => "audio/wav",
             ".mp3" => "audio/mpeg",
             ".m4a" => "audio/mp4",
+            ".ogg" => "audio/ogg",
             ".mp4" => "video/mp4",
             ".mov" => "video/quicktime",
             _ => "application/octet-stream"

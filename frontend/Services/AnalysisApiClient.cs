@@ -13,7 +13,10 @@ namespace SeeMusicApp.Services
     public sealed class AnalysisApiClient
     {
         private static readonly HttpClient HttpClient = CreateHttpClient();
-        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer();
+        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer
+        {
+            MaxJsonLength = int.MaxValue
+        };
 
         public async Task<AnalysisWorkflowResult> AnalyzeAudioAsync(
             string filePath,
@@ -38,6 +41,51 @@ namespace SeeMusicApp.Services
                 Upload = upload,
                 Analysis = analysis
             };
+        }
+
+        public async Task<HealthStatusResponse> GetHealthAsync()
+        {
+            var response = await HttpClient.GetAsync(BuildUrl("/health"));
+            var payload = await ReadApiResponseAsync<HealthStatusResponse>(response);
+            return payload.Data;
+        }
+
+        public async Task<CreateTranscriptionResponse> CreatePianoTranscriptionAsync(string mediaId, string projectTitle)
+        {
+            var json = _serializer.Serialize(new CreateTranscriptionRequest
+            {
+                SourceType = "audio",
+                MediaId = mediaId,
+                ProjectTitle = projectTitle,
+                Options = new TranscriptionOptionsRequest
+                {
+                    Mode = "piano",
+                    SeparateMelody = true,
+                    SeparateAccompaniment = true,
+                    AnalyzeRhythm = true
+                }
+            });
+
+            using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+            {
+                var response = await HttpClient.PostAsync(BuildUrl("/api/v1/transcriptions"), content);
+                var payload = await ReadApiResponseAsync<CreateTranscriptionResponse>(response);
+                return payload.Data;
+            }
+        }
+
+        public async Task<TranscriptionStatusResponse> GetTranscriptionStatusAsync(string jobId)
+        {
+            var response = await HttpClient.GetAsync(BuildUrl("/api/v1/transcriptions/" + Uri.EscapeDataString(jobId)));
+            var payload = await ReadApiResponseAsync<TranscriptionStatusResponse>(response);
+            return payload.Data;
+        }
+
+        public async Task<ScoreDetailResponse> GetScoreAsync(string scoreId)
+        {
+            var response = await HttpClient.GetAsync(BuildUrl("/api/v1/scores/" + Uri.EscapeDataString(scoreId)));
+            var payload = await ReadApiResponseAsync<ScoreDetailResponse>(response);
+            return payload.Data;
         }
 
         public async Task<EvaluationWorkflowResult> SubmitEvaluationAsync(
@@ -164,7 +212,7 @@ namespace SeeMusicApp.Services
             return "http://localhost:5000";
         }
 
-        private async Task<MediaUploadResponse> UploadAudioAsync(string filePath)
+        public async Task<MediaUploadResponse> UploadAudioAsync(string filePath)
         {
             using (var form = new MultipartFormDataContent())
             using (var stream = File.OpenRead(filePath))
@@ -311,6 +359,8 @@ namespace SeeMusicApp.Services
                     return "audio/mpeg";
                 case ".m4a":
                     return "audio/mp4";
+                case ".ogg":
+                    return "audio/ogg";
                 case ".mp4":
                     return "video/mp4";
                 case ".mov":

@@ -12,6 +12,10 @@ public class SeeMusicDbContext : DbContext
     public DbSet<EvaluationSegment> EvaluationSegments { get; set; }
     public DbSet<EvaluationSuggestion> EvaluationSuggestions { get; set; }
     public DbSet<EvaluationExport> EvaluationExports { get; set; }
+    public DbSet<Score> Scores { get; set; }
+    public DbSet<ScoreTrack> ScoreTracks { get; set; }
+    public DbSet<ScoreNote> ScoreNotes { get; set; }
+    public DbSet<TranscriptionJob> TranscriptionJobs { get; set; }
 
     public SeeMusicDbContext(DbContextOptions<SeeMusicDbContext> options) : base(options)
     {
@@ -110,6 +114,67 @@ public class SeeMusicDbContext : DbContext
             entity.HasOne<Evaluation>().WithMany().HasForeignKey(e => e.EvaluationDbId);
             entity.HasOne<MediaFile>().WithMany().HasForeignKey(e => e.MediaFileId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<User>().WithMany().HasForeignKey(e => e.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Score>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ScoreId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.InstrumentMode).IsRequired().HasMaxLength(30);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.TimeSignature).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.KeySignature).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.MusicXmlContent).HasColumnType("longtext");
+            entity.Property(e => e.AnalysisSummaryJson).HasColumnType("longtext");
+            entity.Property(e => e.WarningMessagesJson).HasColumnType("longtext");
+            entity.HasIndex(e => e.ScoreId).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.SourceMediaFileId);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId);
+            entity.HasOne<MediaFile>().WithMany().HasForeignKey(e => e.SourceMediaFileId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ScoreTrack>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(80);
+            entity.Property(e => e.HandRole).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Instrument).IsRequired().HasMaxLength(40);
+            entity.Property(e => e.SummaryText).HasMaxLength(500);
+            entity.HasIndex(e => new { e.ScoreDbId, e.SortOrder });
+            entity.HasOne<Score>().WithMany().HasForeignKey(e => e.ScoreDbId);
+        });
+
+        modelBuilder.Entity<ScoreNote>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DurationType).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.PitchName).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Staff).IsRequired().HasMaxLength(20);
+            entity.HasIndex(e => new { e.ScoreDbId, e.ScoreTrackDbId, e.MeasureNo, e.SortOrder });
+            entity.HasOne<Score>().WithMany().HasForeignKey(e => e.ScoreDbId);
+            entity.HasOne<ScoreTrack>().WithMany().HasForeignKey(e => e.ScoreTrackDbId);
+        });
+
+        modelBuilder.Entity<TranscriptionJob>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.JobId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ProjectTitle).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.SourceType).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.OptionsJson).HasColumnType("longtext");
+            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
+            entity.Property(e => e.DetectedTimeSignature).HasMaxLength(20);
+            entity.Property(e => e.BeatAnalysisJson).HasColumnType("longtext");
+            entity.Property(e => e.WarningMessagesJson).HasColumnType("longtext");
+            entity.HasIndex(e => e.JobId).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Status);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId);
+            entity.HasOne<MediaFile>().WithMany().HasForeignKey(e => e.SourceMediaFileId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Score>().WithMany().HasForeignKey(e => e.ScoreDbId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

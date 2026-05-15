@@ -60,6 +60,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.Configure<EvaluationProcessingOptions>(
     builder.Configuration.GetSection("EvaluationProcessing"));
+builder.Services.Configure<TranscriptionProcessingOptions>(
+    builder.Configuration.GetSection("TranscriptionProcessing"));
 builder.Services.AddApplicationServices();
 
 var app = builder.Build();

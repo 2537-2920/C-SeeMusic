@@ -12,11 +12,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBeatAnalysisService, BeatAnalysisService>();
         services.AddScoped<IAudioPreparationService, AudioPreparationService>();
         services.AddScoped<IPitchAnalysisService, PitchAnalysisService>();
+        services.AddScoped<IPianoTranscriptionService, PianoTranscriptionService>();
+        services.AddScoped<ITranscriptionService, TranscriptionService>();
         services.AddScoped<IRhythmEvaluationService, RhythmEvaluationService>();
         services.AddScoped<IEvaluationScoringService, EvaluationScoringService>();
         services.AddScoped<IEvaluationService, EvaluationService>();
+        services.AddSingleton<ITranscriptionTaskQueue, TranscriptionTaskQueue>();
         services.AddSingleton<IEvaluationTaskQueue, EvaluationTaskQueue>();
         services.AddSingleton<IAnonymousEvaluationAccessTokenService, AnonymousEvaluationAccessTokenService>();
+        services.AddHostedService<TranscriptionWorker>();
         services.AddHostedService<EvaluationWorker>();
         return services;
     }

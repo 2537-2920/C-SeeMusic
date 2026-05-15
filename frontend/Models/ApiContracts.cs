@@ -16,6 +16,11 @@ namespace SeeMusicApp.Models
         public string FileName { get; set; }
         public string Url { get; set; }
         public string Type { get; set; }
+        public string MimeType { get; set; }
+        public long FileSize { get; set; }
+        public int? DurationMs { get; set; }
+        public string PreparedAudioStatus { get; set; }
+        public string PreparedAudioPath { get; set; }
     }
 
     public sealed class BeatAnalysisResult
@@ -50,6 +55,96 @@ namespace SeeMusicApp.Models
     {
         public MediaUploadResponse Upload { get; set; }
         public TranscriptionResult Analysis { get; set; }
+    }
+
+    public sealed class HealthStatusResponse
+    {
+        public string Status { get; set; }
+        public bool ServiceAvailable { get; set; }
+        public DateTime TimestampUtc { get; set; }
+    }
+
+    public sealed class CreateTranscriptionRequest
+    {
+        public string SourceType { get; set; }
+        public string MediaId { get; set; }
+        public string ProjectTitle { get; set; }
+        public TranscriptionOptionsRequest Options { get; set; }
+    }
+
+    public sealed class TranscriptionOptionsRequest
+    {
+        public string Mode { get; set; }
+        public bool SeparateMelody { get; set; }
+        public bool SeparateAccompaniment { get; set; }
+        public bool AnalyzeRhythm { get; set; }
+    }
+
+    public sealed class CreateTranscriptionResponse
+    {
+        public string JobId { get; set; }
+        public string Status { get; set; }
+        public int Progress { get; set; }
+        public string ScoreId { get; set; }
+        public string Message { get; set; }
+    }
+
+    public sealed class TranscriptionStatusResponse
+    {
+        public string JobId { get; set; }
+        public string Status { get; set; }
+        public int Progress { get; set; }
+        public string ErrorMessage { get; set; }
+        public string ScoreId { get; set; }
+        public double? DetectedTempoBpm { get; set; }
+        public string DetectedTimeSignature { get; set; }
+        public int? MeasureCount { get; set; }
+        public int? EstimatedPageCount { get; set; }
+        public List<ScoreTrackResponse> TrackSummaries { get; set; }
+        public List<string> Warnings { get; set; }
+    }
+
+    public sealed class ScoreDetailResponse
+    {
+        public string ScoreId { get; set; }
+        public string Title { get; set; }
+        public string InstrumentMode { get; set; }
+        public string Status { get; set; }
+        public double? TempoBpm { get; set; }
+        public string TimeSignature { get; set; }
+        public string KeySignature { get; set; }
+        public int MeasureCount { get; set; }
+        public int EstimatedPageCount { get; set; }
+        public string MusicXmlContent { get; set; }
+        public List<ScoreTrackResponse> Tracks { get; set; }
+        public ScoreAnalysisSummaryResponse AnalysisSummary { get; set; }
+        public List<ScorePreviewPageResponse> PreviewPages { get; set; }
+        public List<string> Warnings { get; set; }
+    }
+
+    public sealed class ScoreTrackResponse
+    {
+        public string Name { get; set; }
+        public string HandRole { get; set; }
+        public string Instrument { get; set; }
+        public int NoteCount { get; set; }
+        public int? RangeLowMidi { get; set; }
+        public int? RangeHighMidi { get; set; }
+        public bool IsGenerated { get; set; }
+        public string SummaryText { get; set; }
+    }
+
+    public sealed class ScoreAnalysisSummaryResponse
+    {
+        public string MelodySummary { get; set; }
+        public string AccompanimentSummary { get; set; }
+        public string AssignmentSummary { get; set; }
+    }
+
+    public sealed class ScorePreviewPageResponse
+    {
+        public int PageNumber { get; set; }
+        public string SvgContent { get; set; }
     }
 
     public sealed class EvaluationSubmitResponse

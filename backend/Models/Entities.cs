@@ -108,3 +108,81 @@ public sealed class EvaluationExport
     public int CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
+
+public sealed class Score
+{
+    public int Id { get; set; }
+    public string ScoreId { get; set; } = string.Empty;
+    public int? UserId { get; set; }
+    public int SourceMediaFileId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string InstrumentMode { get; set; } = "piano";
+    public string Status { get; set; } = "processing";
+    public double? TempoBpm { get; set; }
+    public string TimeSignature { get; set; } = "4/4";
+    public string KeySignature { get; set; } = "C";
+    public int MeasureCount { get; set; }
+    public int EstimatedPageCount { get; set; }
+    public string MusicXmlContent { get; set; } = string.Empty;
+    public string AnalysisSummaryJson { get; set; } = "{}";
+    public string WarningMessagesJson { get; set; } = "[]";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class ScoreTrack
+{
+    public int Id { get; set; }
+    public int ScoreDbId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string HandRole { get; set; } = string.Empty;
+    public string Instrument { get; set; } = "piano";
+    public int NoteCount { get; set; }
+    public int? RangeLowMidi { get; set; }
+    public int? RangeHighMidi { get; set; }
+    public bool IsGenerated { get; set; }
+    public string SummaryText { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+}
+
+public sealed class ScoreNote
+{
+    public int Id { get; set; }
+    public int ScoreDbId { get; set; }
+    public int ScoreTrackDbId { get; set; }
+    public int MeasureNo { get; set; }
+    public double BeatStart { get; set; }
+    public string DurationType { get; set; } = "quarter";
+    public double DurationBeats { get; set; }
+    public string PitchName { get; set; } = string.Empty;
+    public int MidiNumber { get; set; }
+    public string Staff { get; set; } = string.Empty;
+    public double StartTimeSeconds { get; set; }
+    public bool IsChordTone { get; set; }
+    public int SortOrder { get; set; }
+}
+
+public sealed class TranscriptionJob
+{
+    public int Id { get; set; }
+    public string JobId { get; set; } = string.Empty;
+    public int? UserId { get; set; }
+    public int SourceMediaFileId { get; set; }
+    public int? ScoreDbId { get; set; }
+    public string ProjectTitle { get; set; } = string.Empty;
+    public string SourceType { get; set; } = "audio";
+    public string Status { get; set; } = "queued";
+    public int Progress { get; set; }
+    public string OptionsJson { get; set; } = "{}";
+    public string ErrorMessage { get; set; } = string.Empty;
+    public double? DetectedTempoBpm { get; set; }
+    public string? DetectedTimeSignature { get; set; }
+    public int? MeasureCount { get; set; }
+    public int? EstimatedPageCount { get; set; }
+    public string BeatAnalysisJson { get; set; } = "{}";
+    public string WarningMessagesJson { get; set; } = "[]";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? StartedAt { get; set; }
+    public DateTime? FinishedAt { get; set; }
+}
