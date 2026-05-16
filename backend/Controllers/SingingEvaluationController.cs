@@ -35,6 +35,11 @@ public class SingingEvaluationController : ControllerBase
             return BadRequest(new ApiResponse<EvaluationSubmitResponse> { Code = 40001, Message = "performanceFile required" });
         }
 
+        if (referenceFile == null || referenceFile.Length == 0)
+        {
+            return BadRequest(new ApiResponse<EvaluationSubmitResponse> { Code = 40001, Message = "referenceFile required" });
+        }
+
         try
         {
             var response = await _evaluationService.SubmitAsync(

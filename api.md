@@ -370,8 +370,8 @@ Authorization: Bearer <access_token>
 
 界面已体现的需求：
 
+- 上传标准音频
 - 上传演唱作品
-- 可选上传原唱或伴奏参考
 - 评估音准、节奏、情感表达
 - 输出综合评分和纠错建议
 - 导出 PDF 报告
@@ -384,7 +384,7 @@ Authorization: Bearer <access_token>
 表单字段：
 
 - `performanceFile`
-- `referenceFile` 可选
+- `referenceFile` 必填
 
 ### 4.2 创建评估任务
 

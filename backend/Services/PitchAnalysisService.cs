@@ -31,16 +31,10 @@ public sealed class PitchAnalysisService : IPitchAnalysisService
         {
             return new PitchAnalysisResult
             {
-                Status = "skipped",
+                Status = "failed",
                 Summary = isEnglish
-                    ? "No reference audio was provided, so pitch accuracy scoring was skipped."
-                    : "未提供参考音频，本次跳过音准准确率评分。",
-                Warnings =
-                {
-                    isEnglish
-                        ? "No reference audio was provided, so the pitch dimension was skipped."
-                        : "未提供参考音频，音准维度已跳过。"
-                }
+                    ? "No reference audio was provided, so the comparison pitch evaluation could not continue."
+                    : "未上传标准音频，无法继续进行音准对比评估。",
             };
         }
 
@@ -59,16 +53,10 @@ public sealed class PitchAnalysisService : IPitchAnalysisService
         {
             return new PitchAnalysisResult
             {
-                Status = "skipped",
+                Status = "failed",
                 Summary = isEnglish
-                    ? "The reference audio file is missing, so pitch scoring was skipped."
-                    : "参考音频不存在，已跳过音准评分。",
-                Warnings =
-                {
-                    isEnglish
-                        ? "The reference audio file is missing, so the pitch dimension was skipped."
-                        : "参考音频不存在，音准维度已跳过。"
-                }
+                    ? "The reference audio file is missing, so the comparison pitch evaluation could not continue."
+                    : "标准音频不存在，无法继续进行音准对比评估。",
             };
         }
 
@@ -95,16 +83,10 @@ public sealed class PitchAnalysisService : IPitchAnalysisService
             {
                 return new PitchAnalysisResult
                 {
-                    Status = "skipped",
+                    Status = "failed",
                     Summary = isEnglish
-                        ? "The reference audio did not contain enough stable melody to score pitch."
-                        : "参考音频未提取到足够主旋律，本次跳过音准评分。",
-                    Warnings =
-                    {
-                        isEnglish
-                            ? "The reference audio did not contain enough stable melody for pitch scoring."
-                            : "参考音频未提取到足够主旋律，本次跳过音准评分。"
-                    }
+                        ? "The reference audio did not contain enough stable melody to complete the comparison pitch evaluation."
+                        : "标准音频未提取到足够稳定的主旋律，无法继续进行音准对比评估。",
                 };
             }
 
@@ -118,16 +100,10 @@ public sealed class PitchAnalysisService : IPitchAnalysisService
             {
                 return new PitchAnalysisResult
                 {
-                    Status = "skipped",
+                    Status = "failed",
                     Summary = isEnglish
-                        ? "The aligned pitch fragments were too sparse to score pitch reliably."
-                        : "参考音频与演唱音频的可对齐音高片段不足，本次跳过音准评分。",
-                    Warnings =
-                    {
-                        isEnglish
-                            ? "The aligned pitch fragments were too sparse to score pitch reliably."
-                            : "参考音频与演唱音频的可对齐音高片段不足，本次跳过音准评分。"
-                    }
+                        ? "The aligned pitch fragments were too sparse to complete a reliable comparison pitch evaluation."
+                        : "标准音频与演唱音频的可对齐音高片段不足，无法继续进行音准对比评估。",
                 };
             }
 

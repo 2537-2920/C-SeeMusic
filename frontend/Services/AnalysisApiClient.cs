@@ -116,6 +116,12 @@ namespace SeeMusicApp.Services
                 throw new InvalidOperationException("请先选择可用的演唱音频文件。");
             }
 
+            if (string.IsNullOrWhiteSpace(request.ReferenceFilePath)
+                || !File.Exists(request.ReferenceFilePath))
+            {
+                throw new InvalidOperationException("请先选择可用的标准音频文件。");
+            }
+
             var submit = await SubmitSingingEvaluationRequestAsync(request);
 
             var status = new EvaluationStatusResponse
@@ -209,7 +215,7 @@ namespace SeeMusicApp.Services
                 return configured.TrimEnd('/');
             }
 
-            return "http://localhost:5000";
+            return "http://localhost:5001";
         }
 
         public async Task<MediaUploadResponse> UploadAudioAsync(string filePath)
@@ -258,13 +264,10 @@ namespace SeeMusicApp.Services
                 StreamContent referenceContent = null;
                 try
                 {
-                    if (!string.IsNullOrWhiteSpace(request.ReferenceFilePath) && File.Exists(request.ReferenceFilePath))
-                    {
-                        referenceStream = File.OpenRead(request.ReferenceFilePath);
-                        referenceContent = new StreamContent(referenceStream);
-                        referenceContent.Headers.ContentType = new MediaTypeHeaderValue(GetMimeType(request.ReferenceFilePath));
-                        form.Add(referenceContent, "referenceFile", Path.GetFileName(request.ReferenceFilePath));
-                    }
+                    referenceStream = File.OpenRead(request.ReferenceFilePath);
+                    referenceContent = new StreamContent(referenceStream);
+                    referenceContent.Headers.ContentType = new MediaTypeHeaderValue(GetMimeType(request.ReferenceFilePath));
+                    form.Add(referenceContent, "referenceFile", Path.GetFileName(request.ReferenceFilePath));
 
                     var response = await HttpClient.PostAsync(BuildUrl("/api/v1/singing/evaluate"), form);
                     var payload = await ReadApiResponseAsync<EvaluationSubmitResponse>(response);

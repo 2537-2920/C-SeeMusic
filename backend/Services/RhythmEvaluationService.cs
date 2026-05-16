@@ -28,24 +28,46 @@ public sealed class RhythmEvaluationService : IRhythmEvaluationService
             };
         }
 
-        var warnings = new List<string>();
-        BeatAnalysisResult? referenceAnalysis = null;
-
-        if (!string.IsNullOrWhiteSpace(referencePath) && File.Exists(referencePath))
+        if (string.IsNullOrWhiteSpace(referencePath))
         {
-            referenceAnalysis = _beatAnalysisService.AnalyzeFile(referencePath);
-            if (!referenceAnalysis.IsAvailable)
+            return new RhythmEvaluationResult
             {
-                warnings.Add(isEnglish
-                    ? "The reference audio did not contain stable beat markers, so rhythm scoring fell back to a solo-performance evaluation."
-                    : "参考音频未提取到稳定拍点，节奏评分已回退为演唱单独评分。");
-                referenceAnalysis = null;
-            }
+                Status = "failed",
+                ThresholdMs = thresholdMs,
+                Summary = isEnglish
+                    ? "No reference audio was provided, so the comparison rhythm evaluation could not continue."
+                    : "未上传标准音频，无法继续进行节奏对比评估。",
+            };
+        }
+
+        if (!File.Exists(referencePath))
+        {
+            return new RhythmEvaluationResult
+            {
+                Status = "failed",
+                ThresholdMs = thresholdMs,
+                Summary = isEnglish
+                    ? "The reference audio file is missing, so the comparison rhythm evaluation could not continue."
+                    : "标准音频不存在，无法继续进行节奏对比评估。",
+            };
+        }
+
+        var referenceAnalysis = _beatAnalysisService.AnalyzeFile(referencePath);
+        if (!referenceAnalysis.IsAvailable)
+        {
+            return new RhythmEvaluationResult
+            {
+                Status = "failed",
+                ThresholdMs = thresholdMs,
+                Summary = isEnglish
+                    ? "The reference audio did not contain stable beat markers, so the comparison rhythm evaluation could not continue."
+                    : "标准音频未提取到稳定拍点，无法继续进行节奏对比评估。",
+            };
         }
 
         var segments = BuildSegments(
             performanceAnalysis.BeatTimes,
-            referenceAnalysis?.BeatTimes,
+            referenceAnalysis.BeatTimes,
             thresholdMs,
             isEnglish);
 
@@ -56,10 +78,8 @@ public sealed class RhythmEvaluationService : IRhythmEvaluationService
             Critical = segments.Count(segment => segment.Severity == "critical"),
         };
 
-        var coverage = referenceAnalysis != null
-            ? Math.Round(Math.Min(performanceAnalysis.BeatTimes.Count, referenceAnalysis.BeatTimes.Count)
-                / (double)Math.Max(1, Math.Max(performanceAnalysis.BeatTimes.Count, referenceAnalysis.BeatTimes.Count)) * 100.0, 1)
-            : Math.Round(Math.Min(100.0, performanceAnalysis.BeatTimes.Count * 6.0), 1);
+        var coverage = Math.Round(Math.Min(performanceAnalysis.BeatTimes.Count, referenceAnalysis.BeatTimes.Count)
+            / (double)Math.Max(1, Math.Max(performanceAnalysis.BeatTimes.Count, referenceAnalysis.BeatTimes.Count)) * 100.0, 1);
         var consistency = Math.Round(Math.Clamp(performanceAnalysis.Stability, 0.0, 1.0) * 100.0, 1);
         var averageDeviationMs = segments.Count == 0
             ? 0.0
@@ -87,13 +107,11 @@ public sealed class RhythmEvaluationService : IRhythmEvaluationService
             AverageDeviationMs = averageDeviationMs,
             ThresholdMs = thresholdMs,
             SeverityCounts = severityCounts,
-            Summary = referenceAnalysis != null
-                ? (isEnglish
-                    ? $"The performance tempo is about {performanceAnalysis.TempoBpm:F1} BPM and has been aligned against the reference beat grid."
-                    : $"节奏约 {performanceAnalysis.TempoBpm:F1} BPM，已结合参考拍点对齐评分。")
-                : performanceAnalysis.Summary,
+            Summary = isEnglish
+                ? $"The performance tempo is about {performanceAnalysis.TempoBpm:F1} BPM and has been aligned against the reference beat grid."
+                : $"节奏约 {performanceAnalysis.TempoBpm:F1} BPM，已结合参考拍点对齐评分。",
             Segments = segments,
-            Warnings = warnings,
+            Warnings = new List<string>(),
         };
     }
 

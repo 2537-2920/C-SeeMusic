@@ -56,24 +56,25 @@ public sealed class EvaluationService : IEvaluationService
         CancellationToken cancellationToken = default)
     {
         var normalizedOptions = (options ?? new EvaluationOptionsRequest()).Normalize();
+        if (referenceFile == null || referenceFile.Length == 0)
+        {
+            throw new InvalidOperationException(LocalizedText.ReferenceRequired(normalizedOptions));
+        }
+
         var performanceUpload = await _mediaService.UploadAsync(
             performanceFile,
             ResolveMediaType(performanceFile.FileName),
             userId);
 
-        MediaUploadResponse? referenceUpload = null;
-        if (referenceFile != null)
-        {
-            referenceUpload = await _mediaService.UploadAsync(
-                referenceFile,
-                ResolveMediaType(referenceFile.FileName),
-                userId);
-        }
+        var referenceUpload = await _mediaService.UploadAsync(
+            referenceFile,
+            ResolveMediaType(referenceFile.FileName),
+            userId);
 
         return await CreateAsync(new CreateEvaluationRequest
         {
             PerformanceMediaId = performanceUpload.MediaId,
-            ReferenceMediaId = referenceUpload?.MediaId,
+            ReferenceMediaId = referenceUpload.MediaId,
             Options = normalizedOptions
         }, userId, cancellationToken);
     }
@@ -84,17 +85,18 @@ public sealed class EvaluationService : IEvaluationService
         CancellationToken cancellationToken = default)
     {
         var normalizedOptions = (request.Options ?? new EvaluationOptionsRequest()).Normalize();
+        if (string.IsNullOrWhiteSpace(request.ReferenceMediaId))
+        {
+            throw new InvalidOperationException(LocalizedText.ReferenceRequired(normalizedOptions));
+        }
+
         var performanceMedia = await _dbContext.MediaFiles
             .SingleOrDefaultAsync(item => item.MediaId == request.PerformanceMediaId, cancellationToken)
             ?? throw new InvalidOperationException("未找到演唱素材。");
 
-        MediaFile? referenceMedia = null;
-        if (!string.IsNullOrWhiteSpace(request.ReferenceMediaId))
-        {
-            referenceMedia = await _dbContext.MediaFiles
-                .SingleOrDefaultAsync(item => item.MediaId == request.ReferenceMediaId, cancellationToken)
-                ?? throw new InvalidOperationException("未找到参考素材。");
-        }
+        var referenceMedia = await _dbContext.MediaFiles
+            .SingleOrDefaultAsync(item => item.MediaId == request.ReferenceMediaId, cancellationToken)
+            ?? throw new InvalidOperationException("未找到参考素材。");
 
         var anonymousAccessToken = userId.HasValue ? null : _accessTokenService.GenerateToken();
         var evaluation = new Evaluation
@@ -344,27 +346,29 @@ public sealed class EvaluationService : IEvaluationService
             evaluation.UpdatedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            PreparedAudioResult? referenceAudio = null;
-            MediaFile? referenceMedia = null;
-            var pipelineWarnings = new List<string>();
-            if (evaluation.ReferenceMediaFileId.HasValue)
+            if (!evaluation.ReferenceMediaFileId.HasValue)
             {
-                referenceMedia = await _dbContext.MediaFiles
-                    .SingleOrDefaultAsync(item => item.Id == evaluation.ReferenceMediaFileId.Value, cancellationToken);
+                await MarkFailedAsync(evaluation, LocalizedText.MissingReference(options), cancellationToken);
+                return;
+            }
 
-                if (referenceMedia != null)
-                {
-                    referenceAudio = await _audioPreparationService.PrepareAsync(referenceMedia, cancellationToken);
-                    if (!string.Equals(referenceAudio.Status, "ready", StringComparison.OrdinalIgnoreCase))
-                    {
-                        pipelineWarnings.Add(referenceAudio.ErrorMessage ?? LocalizedText.ReferencePreparationFailed(options));
-                        referenceAudio = null;
-                    }
-                }
-                else
-                {
-                    pipelineWarnings.Add(LocalizedText.MissingReference(options));
-                }
+            var referenceMedia = await _dbContext.MediaFiles
+                .SingleOrDefaultAsync(item => item.Id == evaluation.ReferenceMediaFileId.Value, cancellationToken);
+            if (referenceMedia == null)
+            {
+                await MarkFailedAsync(evaluation, LocalizedText.MissingReference(options), cancellationToken);
+                return;
+            }
+
+            var referenceAudio = await _audioPreparationService.PrepareAsync(referenceMedia, cancellationToken);
+            if (!string.Equals(referenceAudio.Status, "ready", StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(referenceAudio.AbsolutePath))
+            {
+                await MarkFailedAsync(
+                    evaluation,
+                    referenceAudio.ErrorMessage ?? LocalizedText.ReferencePreparationFailed(options),
+                    cancellationToken);
+                return;
             }
 
             PitchAnalysisResult pitchResult;
@@ -380,8 +384,13 @@ public sealed class EvaluationService : IEvaluationService
             {
                 pitchResult = _pitchAnalysisService.Analyze(
                     performanceAudio.AbsolutePath,
-                    referenceAudio?.AbsolutePath,
+                    referenceAudio.AbsolutePath,
                     options);
+                if (!string.Equals(pitchResult.Status, "succeeded", StringComparison.OrdinalIgnoreCase))
+                {
+                    await MarkFailedAsync(evaluation, pitchResult.Summary, cancellationToken);
+                    return;
+                }
             }
 
             evaluation.Progress = 65;
@@ -402,12 +411,16 @@ public sealed class EvaluationService : IEvaluationService
             {
                 rhythmResult = _rhythmEvaluationService.Analyze(
                     performanceAudio.AbsolutePath,
-                    referenceAudio?.AbsolutePath,
+                    referenceAudio.AbsolutePath,
                     options);
+                if (!string.Equals(rhythmResult.Status, "succeeded", StringComparison.OrdinalIgnoreCase))
+                {
+                    await MarkFailedAsync(evaluation, rhythmResult.Summary, cancellationToken);
+                    return;
+                }
             }
 
             var aggregate = _evaluationScoringService.Score(pitchResult, rhythmResult, options);
-            aggregate.Warnings.AddRange(pipelineWarnings);
             aggregate.Warnings = aggregate.Warnings.Distinct().ToList();
             var transposeBase = BuildTransposeBase(pitchResult, referenceMedia, options);
 
@@ -975,18 +988,25 @@ internal static class LocalizedText
             : "演唱素材尚未准备完成。";
     }
 
+    public static string ReferenceRequired(EvaluationOptionsRequest options)
+    {
+        return IsEnglish(options)
+            ? "Upload a reference track before starting a two-file comparison evaluation."
+            : "请先上传标准参考音频后再开始双文件对比评估。";
+    }
+
     public static string ReferencePreparationFailed(EvaluationOptionsRequest options)
     {
         return IsEnglish(options)
-            ? "The reference source could not be prepared and the task will fall back to a limited evaluation."
-            : "参考素材准备失败，本次将回退为有限评估。";
+            ? "The reference source could not be prepared, so the comparison evaluation could not continue."
+            : "标准音频准备失败，无法继续进行双文件对比评估。";
     }
 
     public static string MissingReference(EvaluationOptionsRequest options)
     {
         return IsEnglish(options)
-            ? "The reference source was not found, so the task fell back to a solo-performance evaluation."
-            : "未找到参考素材，本次将回退为单素材评估。";
+            ? "The reference source was not found, so the comparison evaluation could not continue."
+            : "未找到标准音频，无法继续进行双文件对比评估。";
     }
 
     public static string PitchDisabled(EvaluationOptionsRequest options)

@@ -42,6 +42,44 @@
 - 社区和个人中心需要的表结构，在数据库里继续保留
 - 当前后端未使用到的兼容字段，不作为核心运行字段强依赖
 
+### 1.3 为什么你在实际数据库里 `DESC scores` 会看到更多字段
+
+如果你在本地数据库里看到 `Scores` 除了当前文档里的 CamelCase 字段外，还额外存在下面这类 snake_case 历史列：
+
+- `source_media_id`
+- `cover_media_id`
+- `key_signature`
+- `time_signature`
+- `tempo`
+- `source_type`
+- `is_public`
+- `price_cent`
+- `download_count`
+- `favorite_count`
+- `comment_count`
+- `share_count`
+- `cover_url`
+- `file_url`
+- `artist_name`
+- `arrangement_tag`
+- `primary_category`
+- `published_at`
+
+这通常不表示当前文档写错了，而是表示你的数据库是“旧结构和新结构叠加后的结果”。
+
+原因一般有 3 个：
+
+1. `docker-compose.yml` 使用了持久卷 `mysql-data`，旧库不会因为重启容器自动清空。
+2. 当前 `docker-compose.yml` 并没有把 [database.mysql.sql](/Users/kugua/see-music/database.mysql.sql:1) 挂载到 MySQL 的初始化目录，所以它不会在每次启动时自动重建表。
+3. 当前后端启动时走的是 [backend/Program.cs](/Users/kugua/see-music/backend/Program.cs:68) 里的 `EnsureCreated()` 或 `Migrate()` 逻辑；这会确保当前模型需要的表存在，但不会自动删除旧列。
+
+所以要区分两件事：
+
+- 文档中的 `Scores` 字段：表示当前仓库认定的目标结构
+- 你本地库里实际多出来的旧列：表示历史遗留兼容状态，不代表当前后端正在使用它们
+
+当前仓库里的后端核心代码直接对应的是 [backend/Models/Entities.cs](/Users/kugua/see-music/backend/Models/Entities.cs:110) 和 [backend/Data/SeeMusicDbContext.cs](/Users/kugua/see-music/backend/Data/SeeMusicDbContext.cs:118) 这套字段，不依赖上面那批 snake_case 历史列。
+
 ## 2. 当前数据库技术设定
 
 - 当前后端使用 `MySQL`
@@ -346,12 +384,16 @@
 | `Name` | varchar(80) | 轨道名 |
 | `HandRole` | varchar(20) | 左手/右手 |
 | `Instrument` | varchar(40) | 当前为钢琴 |
+| `ChannelNo` | int NULL | MIDI 通道号 |
 | `NoteCount` | int | 音符数量 |
 | `RangeLowMidi` | int NULL | 最低音 |
 | `RangeHighMidi` | int NULL | 最高音 |
+| `IsMuted` | tinyint(1) | 是否静音，默认 `0` |
+| `IsVisible` | tinyint(1) | 是否显示，默认 `1` |
 | `IsGenerated` | tinyint(1) | 是否规则生成 |
 | `SummaryText` | varchar(500) | 摘要 |
 | `SortOrder` | int | 排序 |
+| `CreatedAt` | datetime(6) | 创建时间 |
 
 ### 4.10 `ScoreNotes`
 
@@ -371,12 +413,18 @@
 | `BeatStart` | double | 起拍位置 |
 | `DurationType` | varchar(20) | 时值类型 |
 | `DurationBeats` | double | 实际拍长 |
+| `DurationValue` | double NULL | 原始时值数值 |
 | `PitchName` | varchar(10) | 音名，如 `C4` |
 | `MidiNumber` | int | MIDI 音高 |
+| `Velocity` | int | 力度，默认 `64` |
 | `Staff` | varchar(20) | 谱表归属 |
 | `StartTimeSeconds` | double | 原始时间轴起点 |
 | `IsChordTone` | tinyint(1) | 是否和弦音 |
+| `StaffX` | double NULL | 版面横坐标 |
+| `StaffY` | double NULL | 版面纵坐标 |
 | `SortOrder` | int | 排序 |
+| `CreatedAt` | datetime(6) | 创建时间 |
+| `UpdatedAt` | datetime(6) | 更新时间 |
 
 说明：
 
@@ -416,23 +464,192 @@
 | `StartedAt` | datetime(6) NULL | 开始时间 |
 | `FinishedAt` | datetime(6) NULL | 完成时间 |
 
+### 4.12 `UserProfiles`
+
+用途：
+
+- 个人中心扩展资料
+- 社区展示资料兼容表
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `UserId` | int PK / FK | 对应 `Users.Id` |
+| `DisplayName` | varchar(100) NULL | 扩展显示名 |
+| `AvatarMediaFileId` | int NULL FK | 头像媒体文件 |
+| `Bio` | longtext NULL | 扩展简介 |
+| `CreatedAt` | datetime(6) | 创建时间 |
+| `UpdatedAt` | datetime(6) | 更新时间 |
+
+说明：
+
+- 当前核心后端把基础资料直接放在 `Users`
+- 这张表主要用于兼容个人中心和社区扩展资料设计
+
+### 4.13 `UserPreferences`
+
+用途：
+
+- 用户偏好设置
+- 导出与同步习惯配置
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `UserId` | int PK / FK | 对应 `Users.Id` |
+| `Theme` | varchar(50) | 主题，默认 `default` |
+| `DefaultExportFormats` | longtext NULL | 默认导出格式配置 |
+| `SyncEnabled` | tinyint(1) | 是否启用同步，默认 `1` |
+| `UpdatedAt` | datetime(6) | 更新时间 |
+
+### 4.14 `ScoreCategories`
+
+用途：
+
+- 乐谱分类字典表
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `Id` | int PK | 主键 |
+| `Name` | varchar(100) UNIQUE | 分类名 |
+| `Slug` | varchar(100) UNIQUE | 分类标识 |
+| `SortOrder` | int | 排序，默认 `0` |
+
+### 4.15 `ScoreCategoryRelations`
+
+用途：
+
+- 乐谱与分类的多对多关系表
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `ScoreDbId` | int PK / FK | 乐谱 ID |
+| `CategoryId` | int PK / FK | 分类 ID |
+
+### 4.16 `ScoreComments`
+
+用途：
+
+- 乐谱评论
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `Id` | int PK | 主键 |
+| `ScoreDbId` | int FK | 所属乐谱 |
+| `UserId` | int FK | 评论用户 |
+| `Content` | longtext | 评论内容 |
+| `CreatedAt` | datetime(6) | 创建时间 |
+| `UpdatedAt` | datetime(6) NULL | 更新时间 |
+| `Status` | varchar(20) | 状态，默认 `visible` |
+
+### 4.17 `ScoreFavorites`
+
+用途：
+
+- 乐谱收藏关系表
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `UserId` | int PK / FK | 收藏用户 |
+| `ScoreDbId` | int PK / FK | 被收藏乐谱 |
+| `CreatedAt` | datetime(6) | 创建时间 |
+
+### 4.18 `ScoreDownloads`
+
+用途：
+
+- 乐谱下载记录
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `Id` | int PK | 主键 |
+| `ScoreDbId` | int FK | 乐谱 ID |
+| `UserId` | int NULL FK | 下载用户，允许匿名 |
+| `SourceIp` | varchar(64) NULL | 来源 IP |
+| `CreatedAt` | datetime(6) | 创建时间 |
+
+### 4.19 `ScoreOrders`
+
+用途：
+
+- 乐谱购买订单
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `Id` | int PK | 主键 |
+| `UserId` | int FK | 下单用户 |
+| `ScoreDbId` | int FK | 乐谱 ID |
+| `AmountCent` | int | 订单金额，默认 `0` |
+| `Status` | varchar(20) | 订单状态，默认 `pending` |
+| `CreatedAt` | datetime(6) | 创建时间 |
+| `PaidAt` | datetime(6) NULL | 支付时间 |
+
+### 4.20 `ScoreExports`
+
+用途：
+
+- 乐谱导出文件记录
+
+当前字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `Id` | int PK | 主键 |
+| `ScoreDbId` | int FK | 乐谱 ID |
+| `MediaFileId` | int FK | 导出文件媒体 ID |
+| `ExportType` | varchar(20) | 导出类型 |
+| `CreatedByUserId` | int FK | 操作者 |
+| `CreatedAt` | datetime(6) | 创建时间 |
+
 ## 5. 当前表关系
 
-核心关系如下：
+当前 SQL 中的主要关系如下：
 
 - `Users 1 -> n RefreshTokens`
 - `Users 1 -> n MediaFiles`
 - `Users 1 -> n Evaluations`
-- `Users 1 -> n Scores`
+- `Users 1 -> n Scores`，通过 `Scores.UserId`
+- `Users 1 -> n Scores`，通过 `Scores.OwnerUserId`
 - `Users 1 -> n TranscriptionJobs`
+- `Users 1 -> 1 UserProfiles`
+- `Users 1 -> 1 UserPreferences`
+- `Users 1 -> n ScoreComments`
+- `Users 1 -> n ScoreDownloads`
+- `Users 1 -> n ScoreOrders`
+- `Users 1 -> n ScoreExports`
+- `Users n -> n Scores`，通过 `ScoreFavorites`
+- `MediaFiles 1 -> n Evaluations`，通过演唱音频与参考音频外键
+- `MediaFiles 1 -> n Scores`，通过来源音频与封面媒体外键
+- `MediaFiles 1 -> n TranscriptionJobs`
+- `MediaFiles 1 -> n EvaluationExports`
+- `MediaFiles 1 -> n ScoreExports`
 - `Evaluations 1 -> n EvaluationSegments`
 - `Evaluations 1 -> n EvaluationSuggestions`
 - `Evaluations 1 -> n EvaluationExports`
 - `Scores 1 -> n ScoreTracks`
 - `Scores 1 -> n ScoreNotes`
+- `Scores 1 -> n TranscriptionJobs`
+- `Scores 1 -> n ScoreCategoryRelations`
+- `Scores 1 -> n ScoreComments`
+- `Scores 1 -> n ScoreDownloads`
+- `Scores 1 -> n ScoreOrders`
+- `Scores 1 -> n ScoreExports`
 - `ScoreTracks 1 -> n ScoreNotes`
-- `TranscriptionJobs n -> 1 Scores`
-- `TranscriptionJobs n -> 1 MediaFiles`
+- `ScoreCategories 1 -> n ScoreCategoryRelations`
 
 ## 6. 当前页面与表的对应关系
 
@@ -465,7 +682,7 @@
 
 - 当前只做钢琴双手谱
 - 当前不做音符编辑接口，但 `ScoreNotes` 已经落库
-- 当前 PDF 导出走前端本地打印，不走后端 `score_exports`
+- 当前 PDF 导出走前端本地打印，不走后端 `ScoreExports`
 
 ### 6.3 社区页
 
@@ -514,15 +731,15 @@
 
 ### 7.1 已保留的扩展表
 
-- `user_profiles`
-- `score_exports`
-- `score_categories`
-- `score_category_relations`
-- `score_comments`
-- `score_favorites`
-- `score_downloads`
-- `score_orders`
-- `user_preferences`
+- `UserProfiles`
+- `UserPreferences`
+- `ScoreCategories`
+- `ScoreCategoryRelations`
+- `ScoreComments`
+- `ScoreFavorites`
+- `ScoreDownloads`
+- `ScoreOrders`
+- `ScoreExports`
 
 ### 7.2 已保留的兼容字段
 
@@ -547,6 +764,13 @@
 - `Scores.FavoriteCount`
 - `Scores.CommentCount`
 - `Scores.PublishedAt`
+- `ScoreTracks.ChannelNo`
+- `ScoreTracks.IsMuted`
+- `ScoreTracks.IsVisible`
+- `ScoreNotes.DurationValue`
+- `ScoreNotes.Velocity`
+- `ScoreNotes.StaffX`
+- `ScoreNotes.StaffY`
 
 ### 7.3 这样保留的意义
 
@@ -562,12 +786,13 @@
 
 补这些表：
 
-- `score_categories`
-- `score_category_relations`
-- `score_comments`
-- `score_favorites`
-- `score_downloads`
-- `score_orders`
+- `ScoreCategories`
+- `ScoreCategoryRelations`
+- `ScoreComments`
+- `ScoreFavorites`
+- `ScoreDownloads`
+- `ScoreOrders`
+- `ScoreExports`
 
 ### 8.2 云端乐谱编辑
 
@@ -575,8 +800,8 @@
 
 如果以后真做可编辑乐谱，建议再补：
 
-- `score_revisions`
-- `score_edit_logs`
+- `ScoreRevisions`
+- `ScoreEditLogs`
 
 ### 8.3 用户资料扩展
 
@@ -597,6 +822,11 @@
 1. 真正建库：以 [database.mysql.sql](/Users/kugua/see-music/database.mysql.sql:1) 为准
 2. 理解核心运行表与兼容扩展表：看本文档
 3. 理解当前后端真正直接读写的核心结构：看 [backend/Models/Entities.cs](/Users/kugua/see-music/backend/Models/Entities.cs:1) 和 [backend/Data/SeeMusicDbContext.cs](/Users/kugua/see-music/backend/Data/SeeMusicDbContext.cs:1)
+
+补充说明：
+
+- 如果你查看的是一个已经跑过旧版本的本地 MySQL 实例，那么实际表结构可能比本文档更多，因为旧列不会被自动删掉。
+- 如果你希望本地库和本文档完全一致，最稳妥的做法不是继续补文档，而是先备份数据，再按 [database.mysql.sql](/Users/kugua/see-music/database.mysql.sql:1) 重新建库。
 
 如果你愿意，我下一步可以继续帮你做两件事中的一个：
 

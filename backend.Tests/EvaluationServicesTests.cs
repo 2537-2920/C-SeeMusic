@@ -3,15 +3,55 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
+using backend.Data;
 using backend.Models;
 using backend.Services;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace SeeMusic.Backend.Tests;
 
 public class EvaluationServicesTests
 {
+    [Fact]
+    public async Task EvaluationService_SubmitAsync_ShouldRequireReferenceFile()
+    {
+        var service = CreateEvaluationService();
+        using var performanceStream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
+        var performanceFile = new FormFile(performanceStream, 0, performanceStream.Length, "performanceFile", "performance.wav");
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.SubmitAsync(
+            performanceFile,
+            null,
+            new EvaluationOptionsRequest(),
+            null));
+
+        Assert.Equal("请先上传标准参考音频后再开始双文件对比评估。", exception.Message);
+    }
+
+    [Fact]
+    public async Task EvaluationService_CreateAsync_ShouldRequireReferenceMediaId()
+    {
+        var service = CreateEvaluationService();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateAsync(
+            new CreateEvaluationRequest
+            {
+                PerformanceMediaId = "perf_001",
+                ReferenceMediaId = null,
+                Options = new EvaluationOptionsRequest()
+            },
+            null));
+
+        Assert.Equal("请先上传标准参考音频后再开始双文件对比评估。", exception.Message);
+    }
+
     [Fact]
     public void AnonymousAccessTokenService_ShouldValidateMatchingToken()
     {
@@ -186,7 +226,7 @@ public class EvaluationServicesTests
     }
 
     [Fact]
-    public void PitchAnalysisService_ShouldSkip_WhenReferenceHasNoStableMelody()
+    public void PitchAnalysisService_ShouldFail_WhenReferenceHasNoStableMelody()
     {
         var performancePath = CreateWaveFile(CreateMelody(new[] { 440.0, 493.88, 523.25, 587.33, 659.25 }, 0.45, 44100));
         var referencePath = CreateWaveFile(CreateClickTrack(120, 3.0, 44100));
@@ -203,13 +243,41 @@ public class EvaluationServicesTests
                     FeedbackLanguage = "zh-CN"
                 });
 
-            Assert.Equal("skipped", result.Status);
-            Assert.Contains(result.Warnings, warning => warning.Contains("主旋律"));
+            Assert.Equal("failed", result.Status);
+            Assert.Contains("主旋律", result.Summary);
         }
         finally
         {
             File.Delete(performancePath);
             File.Delete(referencePath);
+        }
+    }
+
+    [Fact]
+    public void RhythmEvaluationService_ShouldFail_WhenReferenceHasNoStableBeatMarkers()
+    {
+        var performancePath = CreateWaveFile(CreateClickTrack(120, 8.0, 44100));
+        var referencePath = CreateWaveFile(CreateSilence(8.0, 44100));
+
+        try
+        {
+            var service = new RhythmEvaluationService(new BeatAnalysisService());
+            var result = service.Analyze(
+                performancePath,
+                referencePath,
+                new EvaluationOptionsRequest
+                {
+                    RhythmThresholdMs = 50,
+                    FeedbackLanguage = "zh-CN"
+                });
+
+            Assert.Equal("failed", result.Status);
+            Assert.Contains("稳定拍点", result.Summary);
+        }
+        finally
+        {
+            File.Delete(referencePath);
+            File.Delete(performancePath);
         }
     }
 
@@ -327,6 +395,11 @@ public class EvaluationServicesTests
         return samples;
     }
 
+    private static float[] CreateSilence(double durationSeconds, int sampleRate)
+    {
+        return new float[(int)(durationSeconds * sampleRate)];
+    }
+
     private static float[] CreateJitteredClickTrack(int bpm, double durationSeconds, int sampleRate, double jitterSeconds)
     {
         var totalSamples = (int)(durationSeconds * sampleRate);
@@ -395,5 +468,22 @@ public class EvaluationServicesTests
             var clamped = Math.Clamp(sample, -1.0f, 1.0f);
             writer.Write((short)Math.Round(clamped * short.MaxValue));
         }
+    }
+
+    private static EvaluationService CreateEvaluationService()
+    {
+        var dbContext = new SeeMusicDbContext(new DbContextOptionsBuilder<SeeMusicDbContext>().Options);
+        return new EvaluationService(
+            dbContext,
+            Mock.Of<IMediaService>(),
+            Mock.Of<IAudioPreparationService>(),
+            Mock.Of<IPitchAnalysisService>(),
+            Mock.Of<IRhythmEvaluationService>(),
+            Mock.Of<IEvaluationScoringService>(),
+            Mock.Of<IEvaluationTaskQueue>(),
+            Mock.Of<IAnonymousEvaluationAccessTokenService>(),
+            Mock.Of<IWebHostEnvironment>(environment => environment.ContentRootPath == Path.GetTempPath()),
+            Options.Create(new EvaluationProcessingOptions()),
+            Mock.Of<ILogger<EvaluationService>>());
     }
 }

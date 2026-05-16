@@ -54,7 +54,7 @@ namespace SeeMusicApp
 
             _selectedReferenceAudioPath = filePath;
             TxtSelectedReferenceAudio.Text = Path.GetFileName(filePath);
-            TxtEvalStatus.Text = "标准音频已选择，可以继续上传用户音频并开始评估。";
+            UpdateSelectedAudioStatus();
         }
 
         private void BtnChoosePerformanceAudio_Click(object sender, RoutedEventArgs e)
@@ -67,14 +67,20 @@ namespace SeeMusicApp
 
             _selectedPerformanceAudioPath = filePath;
             TxtSelectedPerformanceAudio.Text = Path.GetFileName(filePath);
-            TxtEvalStatus.Text = "用户音频已选择，准备连接后端评估。";
+            UpdateSelectedAudioStatus();
         }
 
         private async void BtnStartEval_Click(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(_selectedReferenceAudioPath) || !File.Exists(_selectedReferenceAudioPath))
+            {
+                MessageBox.Show("请先上传标准音频。", "SeeMusic AI", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_selectedPerformanceAudioPath) || !File.Exists(_selectedPerformanceAudioPath))
             {
-                MessageBox.Show("请先上传用户音频。", "SeeMusic AI", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("请先上传用户演唱音频。", "SeeMusic AI", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -190,6 +196,32 @@ namespace SeeMusicApp
             UpdateExportAvailability();
         }
 
+        private void UpdateSelectedAudioStatus()
+        {
+            var hasReference = !string.IsNullOrWhiteSpace(_selectedReferenceAudioPath) && File.Exists(_selectedReferenceAudioPath);
+            var hasPerformance = !string.IsNullOrWhiteSpace(_selectedPerformanceAudioPath) && File.Exists(_selectedPerformanceAudioPath);
+
+            if (hasReference && hasPerformance)
+            {
+                TxtEvalStatus.Text = "标准音频与用户演唱音频均已选择，可以开始对比评估。";
+                return;
+            }
+
+            if (hasReference)
+            {
+                TxtEvalStatus.Text = "标准音频已选择，请继续上传用户演唱音频。";
+                return;
+            }
+
+            if (hasPerformance)
+            {
+                TxtEvalStatus.Text = "用户演唱音频已选择，请继续上传标准音频。";
+                return;
+            }
+
+            TxtEvalStatus.Text = "请先上传标准音频与用户演唱音频，再开始对比评估。";
+        }
+
         private void SetBusyState(bool isBusy)
         {
             BtnStartEval.IsEnabled = !isBusy;
@@ -220,7 +252,7 @@ namespace SeeMusicApp
             var consistency = ToDisplayScore(summary.Consistency);
 
             TxtSummaryAnalysisId.Text = string.IsNullOrWhiteSpace(summary.AnalysisId) ? "--" : summary.AnalysisId;
-            TxtSummaryReference.Text = string.IsNullOrWhiteSpace(summary.ReferenceFileName) ? "未提供参考音频" : summary.ReferenceFileName;
+            TxtSummaryReference.Text = string.IsNullOrWhiteSpace(summary.ReferenceFileName) ? "参考音频信息缺失" : summary.ReferenceFileName;
             TxtSummaryUserBpm.Text = FormatValue(summary.PerformanceTempoBpm, "0.0");
             TxtSummaryReferenceBpm.Text = FormatValue(summary.ReferenceTempoBpm, "0.0");
 

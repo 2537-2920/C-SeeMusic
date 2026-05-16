@@ -31,6 +31,11 @@ public class EvaluationsController : ControllerBase
             return BadRequest(new ApiResponse<EvaluationSubmitResponse> { Code = 40001, Message = "performanceFile required" });
         }
 
+        if (referenceFile == null || referenceFile.Length == 0)
+        {
+            return BadRequest(new ApiResponse<EvaluationSubmitResponse> { Code = 40001, Message = "referenceFile required" });
+        }
+
         try
         {
             var response = await _evaluationService.SubmitAsync(
@@ -58,6 +63,11 @@ public class EvaluationsController : ControllerBase
         [FromBody] CreateEvaluationRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (request == null || string.IsNullOrWhiteSpace(request.ReferenceMediaId))
+        {
+            return BadRequest(new ApiResponse<EvaluationSubmitResponse> { Code = 40001, Message = "referenceMediaId required" });
+        }
+
         try
         {
             var response = await _evaluationService.CreateAsync(
