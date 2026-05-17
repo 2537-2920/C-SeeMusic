@@ -41,9 +41,7 @@ namespace backend.Data
                     FavoriteCount = 3400,
                     CommentCount = 42,
                     IsPublic = true,
-                    Status = "published",
-                    PrimaryCategory = "流行乐",
-                    CoverUrl = "https://picsum.photos/seed/sunny/400/600"
+                    Status = "published"
                 },
                 new Score
                 {
@@ -57,9 +55,7 @@ namespace backend.Data
                     FavoriteCount = 850,
                     CommentCount = 12,
                     IsPublic = true,
-                    Status = "published",
-                    PrimaryCategory = "流行乐",
-                    CoverUrl = "https://picsum.photos/seed/model/400/600"
+                    Status = "published"
                 },
                 new Score
                 {
@@ -73,9 +69,7 @@ namespace backend.Data
                     FavoriteCount = 1200,
                     CommentCount = 28,
                     IsPublic = true,
-                    Status = "published",
-                    PrimaryCategory = "流行乐",
-                    CoverUrl = "https://picsum.photos/seed/bigfish/400/600"
+                    Status = "published"
                 },
                 new Score
                 {
@@ -89,9 +83,7 @@ namespace backend.Data
                     FavoriteCount = 4500,
                     CommentCount = 56,
                     IsPublic = true,
-                    Status = "published",
-                    PrimaryCategory = "流行乐",
-                    CoverUrl = "https://picsum.photos/seed/meet/400/600"
+                    Status = "published"
                 }
             };
 
@@ -102,8 +94,8 @@ namespace backend.Data
             var qingTian = context.Scores.First(s => s.Title == "晴天");
             context.ScoreComments.AddRange(new List<ScoreComment>
             {
-                new ScoreComment { ScoreId = qingTian.Id, UserId = admin.Id, Content = "前奏一响，爷青回！", CreatedAt = DateTime.UtcNow.AddDays(-2) },
-                new ScoreComment { ScoreId = qingTian.Id, UserId = admin.Id, Content = "扒谱非常精准，支持！", CreatedAt = DateTime.UtcNow.AddMinutes(-45) }
+                new ScoreComment { ScoreDbId = qingTian.Id, UserId = admin.Id, Content = "前奏一响，爷青回！", CreatedAt = DateTime.UtcNow.AddDays(-2) },
+                new ScoreComment { ScoreDbId = qingTian.Id, UserId = admin.Id, Content = "扒谱非常精准，支持！", CreatedAt = DateTime.UtcNow.AddMinutes(-45) }
             });
 
             context.SaveChanges();

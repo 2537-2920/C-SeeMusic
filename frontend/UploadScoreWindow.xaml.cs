@@ -76,13 +76,13 @@ namespace SeeMusicApp
         {
             if (string.IsNullOrEmpty(selectedScorePath))
             {
-                MessageBox.Show("请先选择乐谱文件", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                CustomMessageBox.Show("请先选择乐谱文件", "提示", MessageBoxType.Warning, this);
                 return;
             }
 
             if (string.IsNullOrEmpty(TxtTitle.Text))
             {
-                MessageBox.Show("请输入乐谱标题", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                CustomMessageBox.Show("请输入乐谱标题", "提示", MessageBoxType.Warning, this);
                 return;
             }
 
@@ -123,14 +123,14 @@ namespace SeeMusicApp
                     scoreStream.Close();
                     coverStream?.Close();
 
-                    MessageBox.Show("乐谱上传成功！已发布到社区。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
+                    CustomMessageBox.Show("乐谱上传成功！已发布到社区。", "发布成功", MessageBoxType.Success, this);
                     this.DialogResult = true; // 标记成功，通知主界面刷新
                     this.Close();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"上传失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                CustomMessageBox.Show($"上传失败: {ex.Message}", "上传失败", MessageBoxType.Error, this);
             }
             finally
             {

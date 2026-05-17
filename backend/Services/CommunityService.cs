@@ -49,7 +49,7 @@ public class CommunityService : ICommunityService
                 Title = s.Title,
                 AuthorName = s.ArtistName,
                 ArrangementTag = s.ArrangementTag,
-                CoverUrl = s.CoverUrl,
+                CoverUrl = s.CoverMediaFile != null ? s.CoverMediaFile.Url : null,
                 Price = s.PriceCent,
                 DownloadCount = s.DownloadCount,
                 FavoriteCount = s.FavoriteCount,
@@ -63,6 +63,8 @@ public class CommunityService : ICommunityService
     {
         var score = await _context.Scores
             .Include(s => s.Owner)
+            .Include(s => s.CoverMediaFile)
+            .Include(s => s.SourceMediaFile)
             .Include(s => s.CategoryRelations).ThenInclude(cr => cr.Category)
             .Include(s => s.Comments.OrderByDescending(c => c.CreatedAt).Take(5))
             .ThenInclude(c => c.User)
@@ -75,7 +77,7 @@ public class CommunityService : ICommunityService
         {
             // 使用更显式的 Count 方式查询，防止某些驱动下的 AnyAsync 优化问题
             isFavorited = await _context.ScoreFavorites
-                .CountAsync(f => f.ScoreId == scoreId && f.UserId == userId.Value) > 0;
+                .CountAsync(f => f.ScoreDbId == scoreId && f.UserId == userId.Value) > 0;
         }
 
         return new ScoreDetailDto
@@ -84,14 +86,14 @@ public class CommunityService : ICommunityService
             Title = score.Title,
             AuthorName = score.ArtistName,
             ArrangementTag = score.ArrangementTag,
-            CoverUrl = score.CoverUrl,
+            CoverUrl = score.CoverMediaFile?.Url,
             Price = score.PriceCent,
             DownloadCount = score.DownloadCount,
             FavoriteCount = score.FavoriteCount,
             CategoryName = score.CategoryRelations.Select(cr => cr.Category?.Name).FirstOrDefault(),
             UploaderName = score.Owner != null ? (score.Owner.DisplayName ?? score.Owner.Username) : "Unknown",
             Description = score.Description,
-            FileUrl = score.FileUrl,
+            FileUrl = score.SourceMediaFile?.Url,
             CommentCount = score.CommentCount,
             IsFavorited = isFavorited,
             RecentComments = score.Comments.Select(c => new CommentDto
@@ -107,7 +109,7 @@ public class CommunityService : ICommunityService
     public async Task<List<CommentDto>> GetCommentsAsync(int scoreId)
     {
         return await _context.ScoreComments
-            .Where(c => c.ScoreId == scoreId && c.Status == "visible")
+            .Where(c => c.ScoreDbId == scoreId && c.Status == "visible")
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new CommentDto
             {
@@ -126,7 +128,7 @@ public class CommunityService : ICommunityService
 
         var comment = new ScoreComment
         {
-            ScoreId = scoreId,
+            ScoreDbId = scoreId,
             UserId = userId,
             Content = content,
             CreatedAt = DateTime.UtcNow,
@@ -145,13 +147,13 @@ public class CommunityService : ICommunityService
         if (score == null) return false;
 
         var existing = await _context.ScoreFavorites
-            .FirstOrDefaultAsync(f => f.UserId == userId && f.ScoreId == scoreId);
+            .FirstOrDefaultAsync(f => f.UserId == userId && f.ScoreDbId == scoreId);
 
         if (favorite)
         {
             if (existing == null)
             {
-                _context.ScoreFavorites.Add(new ScoreFavorite { UserId = userId, ScoreId = scoreId });
+                _context.ScoreFavorites.Add(new ScoreFavorite { UserId = userId, ScoreDbId = scoreId });
                 score.FavoriteCount++;
             }
         }
@@ -170,14 +172,16 @@ public class CommunityService : ICommunityService
 
     public async Task<string?> GetDownloadUrlAsync(int scoreId, int userId)
     {
-        var score = await _context.Scores.FindAsync(scoreId);
+        var score = await _context.Scores
+            .Include(s => s.SourceMediaFile)
+            .FirstOrDefaultAsync(s => s.Id == scoreId);
         if (score == null) return null;
 
         // 这里可以增加付费校验逻辑
         
         var download = new ScoreDownload
         {
-            ScoreId = scoreId,
+            ScoreDbId = scoreId,
             UserId = userId,
             CreatedAt = DateTime.UtcNow
         };
@@ -186,29 +190,58 @@ public class CommunityService : ICommunityService
         score.DownloadCount++;
         await _context.SaveChangesAsync();
 
-        return score.FileUrl;
+        return score.SourceMediaFile?.Url;
     }
 
     public async Task<ScoreDto> UploadScoreAsync(ScoreUploadRequest request, IFormFile scoreFile, IFormFile? coverFile, int userId)
     {
-        string? coverUrl = null;
+        MediaFile? coverMedia = null;
         if (coverFile != null)
         {
-            coverUrl = await SaveFileAsync(coverFile, "covers");
+            var coverUrl = await SaveFileAsync(coverFile, "covers");
+            coverMedia = new MediaFile
+            {
+                MediaId = Guid.NewGuid().ToString("N"),
+                UserId = userId,
+                FileName = coverFile.FileName,
+                Type = "image",
+                Url = coverUrl,
+                MimeType = coverFile.ContentType,
+                FileSize = coverFile.Length,
+                StoragePath = coverUrl,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.MediaFiles.Add(coverMedia);
         }
 
-        string scoreUrl = await SaveFileAsync(scoreFile, "scores");
+        var scoreUrl = await SaveFileAsync(scoreFile, "scores");
+        var sourceMedia = new MediaFile
+        {
+            MediaId = Guid.NewGuid().ToString("N"),
+            UserId = userId,
+            FileName = scoreFile.FileName,
+            Type = "score",
+            Url = scoreUrl,
+            MimeType = scoreFile.ContentType,
+            FileSize = scoreFile.Length,
+            StoragePath = scoreUrl,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.MediaFiles.Add(sourceMedia);
+        await _context.SaveChangesAsync();
 
         var score = new Score
         {
+            ScoreId = Guid.NewGuid().ToString("N"),
+            UserId = userId,
             Title = request.Title,
             ArtistName = request.ArtistName,
             ArrangementTag = request.ArrangementTag,
             Description = request.Description,
             PriceCent = request.Price,
             OwnerUserId = userId,
-            CoverUrl = coverUrl,
-            FileUrl = scoreUrl,
+            CoverMediaFileId = coverMedia?.Id,
+            SourceMediaFileId = sourceMedia.Id,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             IsPublic = true
@@ -239,7 +272,7 @@ public class CommunityService : ICommunityService
             {
                 _context.ScoreCategoryRelations.Add(new ScoreCategoryRelation
                 {
-                    ScoreId = score.Id,
+                    ScoreDbId = score.Id,
                     CategoryId = category.Id
                 });
                 await _context.SaveChangesAsync();
@@ -252,7 +285,7 @@ public class CommunityService : ICommunityService
             Title = score.Title,
             AuthorName = score.ArtistName,
             ArrangementTag = score.ArrangementTag,
-            CoverUrl = score.CoverUrl,
+            CoverUrl = coverMedia?.Url,
             Price = score.PriceCent,
             DownloadCount = score.DownloadCount,
             FavoriteCount = score.FavoriteCount
