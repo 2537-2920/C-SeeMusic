@@ -249,31 +249,36 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0" VerticalAlignment="Bottom" HorizontalAlignment="Center">
-                                        <Border Style="{StaticResource ChartBarStyle}" Height="60" Opacity="0.5"/>
-                                        <TextBlock Text="Mon" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                                        <Border x:Name="BarSun" Style="{StaticResource ChartBarStyle}" Height="0"/>
+                                        <TextBlock x:Name="LabelSun" Text="Sun" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Center">
-                                        <Border Style="{StaticResource ChartBarStyle}" Height="95" Opacity="0.5"/>
-                                        <TextBlock Text="Tue" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                                        <Border x:Name="BarMon" Style="{StaticResource ChartBarStyle}" Height="0"/>
+                                        <TextBlock x:Name="LabelMon" Text="Mon" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" VerticalAlignment="Bottom" HorizontalAlignment="Center">
-                                        <Border Style="{StaticResource ChartBarStyle}" Height="140" Background="#2B5B84"/>
-                                        <TextBlock Text="Wed" FontSize="11" FontWeight="Bold" Foreground="#457b9d" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                                        <Border x:Name="BarTue" Style="{StaticResource ChartBarStyle}" Height="0"/>
+                                        <TextBlock x:Name="LabelTue" Text="Tue" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="3" VerticalAlignment="Bottom" HorizontalAlignment="Center">
-                                        <Border Style="{StaticResource ChartBarStyle}" Height="80" Opacity="0.5"/>
-                                        <TextBlock Text="Thu" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                                        <Border x:Name="BarWed" Style="{StaticResource ChartBarStyle}" Height="0"/>
+                                        <TextBlock x:Name="LabelWed" Text="Wed" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="4" VerticalAlignment="Bottom" HorizontalAlignment="Center">
-                                        <Border Style="{StaticResource ChartBarStyle}" Height="110" Opacity="0.5"/>
-                                        <TextBlock Text="Fri" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                                        <Border x:Name="BarThu" Style="{StaticResource ChartBarStyle}" Height="0"/>
+                                        <TextBlock x:Name="LabelThu" Text="Thu" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="5" VerticalAlignment="Bottom" HorizontalAlignment="Center">
-                                        <Border Style="{StaticResource ChartBarStyle}" Height="45" Opacity="0.3"/>
-                                        <TextBlock Text="Sat" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                                        <Border x:Name="BarFri" Style="{StaticResource ChartBarStyle}" Height="0"/>
+                                        <TextBlock x:Name="LabelFri" Text="Fri" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="6" VerticalAlignment="Bottom" HorizontalAlignment="Center">
+                                        <Border x:Name="BarSat" Style="{StaticResource ChartBarStyle}" Height="0"/>
+                                        <TextBlock x:Name="LabelSat" Text="Sat" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,15,0,0"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>

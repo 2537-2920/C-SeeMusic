@@ -165,16 +165,32 @@ public class UserService : IUserService
         var transcriptionCount = await _dbContext.Scores.CountAsync(s => s.OwnerUserId == userId);
         var favoriteCount = await _dbContext.ScoreFavorites.CountAsync(f => f.UserId == userId);
 
-        var weeklyUsage = new List<WeeklyUsageItem>
+        // 计算本周每天的乐谱上传数量
+        var now = DateTime.UtcNow;
+        var startOfWeek = now.AddDays(-(int)now.DayOfWeek).Date; // 本周日 00:00:00
+        
+        var weeklyUsage = new List<WeeklyUsageItem>();
+        var dayNames = new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+        
+        // 获取用户所有乐谱的创建时间
+        var allScores = await _dbContext.Scores
+            .Where(s => s.OwnerUserId == userId)
+            .Select(s => s.CreatedAt)
+            .ToListAsync();
+        
+        for (int i = 0; i < 7; i++)
         {
-            new() { Day = "Mon", Value = new Random().Next(30, 120) },
-            new() { Day = "Tue", Value = new Random().Next(30, 120) },
-            new() { Day = "Wed", Value = new Random().Next(30, 120) },
-            new() { Day = "Thu", Value = new Random().Next(30, 120) },
-            new() { Day = "Fri", Value = new Random().Next(30, 120) },
-            new() { Day = "Sat", Value = new Random().Next(30, 120) },
-            new() { Day = "Sun", Value = new Random().Next(30, 120) }
-        };
+            var dayStart = startOfWeek.AddDays(i);
+            var dayEnd = dayStart.AddDays(1);
+            
+            var count = allScores.Count(c => c >= dayStart && c < dayEnd);
+            
+            weeklyUsage.Add(new WeeklyUsageItem
+            {
+                Day = dayNames[i],
+                Value = count
+            });
+        }
 
         return new DashboardResponse
         {

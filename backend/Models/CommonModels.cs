@@ -27,6 +27,7 @@ public class DashboardResponse
     public DashboardProfile Profile { get; set; } = new();
     public DashboardStats Stats { get; set; } = new();
     public List<WeeklyUsageItem> WeeklyUsage { get; set; } = new();
+    public string DebugInfo { get; set; } = "";
 }
 
 public class DashboardProfile

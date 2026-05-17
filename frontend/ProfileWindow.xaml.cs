@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -54,7 +56,7 @@ namespace SeeMusicApp
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to load profile: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ProfileWindow] Failed to load profile: {ex.Message}");
             }
         }
 
@@ -164,6 +166,56 @@ namespace SeeMusicApp
                     ImgAvatar.ImageSource = new BitmapImage(new Uri(url));
                 }
                 catch { }
+            }
+
+            UpdateWeeklyUsageChart(dashboard.WeeklyUsage);
+        }
+
+        private void UpdateWeeklyUsageChart(List<WeeklyUsageItem> weeklyUsage)
+        {
+            var barMap = new Dictionary<string, Border>
+            {
+                { "Sun", BarSun }, { "Mon", BarMon }, { "Tue", BarTue },
+                { "Wed", BarWed }, { "Thu", BarThu }, { "Fri", BarFri }, { "Sat", BarSat }
+            };
+            var labelMap = new Dictionary<string, TextBlock>
+            {
+                { "Sun", LabelSun }, { "Mon", LabelMon }, { "Tue", LabelTue },
+                { "Wed", LabelWed }, { "Thu", LabelThu }, { "Fri", LabelFri }, { "Sat", LabelSat }
+            };
+
+            var today = DateTime.UtcNow.DayOfWeek.ToString().Substring(0, 3);
+            var maxValue = weeklyUsage.Max(w => w.Value);
+            var maxHeight = 160.0;
+
+            foreach (var item in weeklyUsage)
+            {
+                if (barMap.TryGetValue(item.Day, out var bar))
+                {
+                    var height = maxValue > 0 ? (item.Value / (double)maxValue) * maxHeight : 0;
+                    bar.Height = Math.Max(height, 5);
+
+                    if (item.Day == today)
+                    {
+                        bar.Background = new SolidColorBrush(Color.FromRgb(43, 91, 132));
+                        bar.Opacity = 1.0;
+                        if (labelMap.TryGetValue(item.Day, out var label))
+                        {
+                            label.Foreground = new SolidColorBrush(Color.FromRgb(69, 123, 157));
+                            label.FontWeight = FontWeights.Bold;
+                        }
+                    }
+                    else
+                    {
+                        bar.Background = new SolidColorBrush(Color.FromRgb(148, 163, 184));
+                        bar.Opacity = item.Value > 0 ? 0.7 : 0.3;
+                        if (labelMap.TryGetValue(item.Day, out var label))
+                        {
+                            label.Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184));
+                            label.FontWeight = FontWeights.Normal;
+                        }
+                    }
+                }
             }
         }
 

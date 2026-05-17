@@ -348,6 +348,7 @@ namespace SeeMusicApp
         public DashboardProfile Profile { get; set; } = new DashboardProfile();
         public DashboardStats Stats { get; set; } = new DashboardStats();
         public List<WeeklyUsageItem> WeeklyUsage { get; set; } = new List<WeeklyUsageItem>();
+        public string DebugInfo { get; set; } = "";
     }
 
     public class DashboardProfile
