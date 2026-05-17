@@ -1,6 +1,7 @@
 using backend.Auth;
 using backend.Data;
 using backend.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -151,7 +152,44 @@ public class UserService : IUserService
         }
 
         _dbContext.SaveChanges();
-        return GetCurrentUser(userId); // Return updated with stats
+        return GetCurrentUser(userId);
+    }
+
+    public async Task<DashboardResponse> GetDashboardAsync(int userId)
+    {
+        var user = await _dbContext.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException("用户不存在");
+
+        var transcriptionCount = await _dbContext.Scores.CountAsync(s => s.OwnerUserId == userId);
+        var favoriteCount = await _dbContext.ScoreFavorites.CountAsync(f => f.UserId == userId);
+
+        var weeklyUsage = new List<WeeklyUsageItem>
+        {
+            new() { Day = "Mon", Value = new Random().Next(30, 120) },
+            new() { Day = "Tue", Value = new Random().Next(30, 120) },
+            new() { Day = "Wed", Value = new Random().Next(30, 120) },
+            new() { Day = "Thu", Value = new Random().Next(30, 120) },
+            new() { Day = "Fri", Value = new Random().Next(30, 120) },
+            new() { Day = "Sat", Value = new Random().Next(30, 120) },
+            new() { Day = "Sun", Value = new Random().Next(30, 120) }
+        };
+
+        return new DashboardResponse
+        {
+            Profile = new DashboardProfile
+            {
+                DisplayName = user.DisplayName,
+                Email = user.Email,
+                AvatarUrl = user.AvatarUrl ?? $"https://api.dicebear.com/7.x/avataaars/svg?seed={user.Username}"
+            },
+            Stats = new DashboardStats
+            {
+                TranscriptionCount = transcriptionCount,
+                EvaluationDurationHours = 0,
+                FavoriteCount = favoriteCount
+            },
+            WeeklyUsage = weeklyUsage
+        };
     }
 
     private UserDto MapToUserDto(User user)

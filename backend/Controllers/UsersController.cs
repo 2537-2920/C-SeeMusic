@@ -43,6 +43,14 @@ public class UsersController : ControllerBase
         return Ok(new ApiResponse<string> { Data = "avatar-uploaded" });
     }
 
+    [HttpGet("me/dashboard")]
+    public async Task<ActionResult<ApiResponse<DashboardResponse>>> GetDashboard()
+    {
+        var userId = GetCurrentUserId();
+        var dashboard = await _userService.GetDashboardAsync(userId);
+        return Ok(new ApiResponse<DashboardResponse> { Data = dashboard });
+    }
+
     private int GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);

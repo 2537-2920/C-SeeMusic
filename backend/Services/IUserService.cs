@@ -9,4 +9,5 @@ public interface IUserService
     AuthResponse RefreshToken(string refreshToken);
     UserDto GetCurrentUser(int userId);
     UserDto UpdateProfile(int userId, UserDto profile);
+    Task<DashboardResponse> GetDashboardAsync(int userId);
 }
