@@ -16,6 +16,7 @@ namespace SeeMusicApp
     {
         private readonly HttpClient _httpClient = new HttpClient();
         private const string ApiBaseUrl = "http://localhost:5000/api/v1";
+        private string _currentBio = "";
 
         public ProfileWindow()
         {
@@ -150,6 +151,7 @@ namespace SeeMusicApp
         {
             TxtDisplayName.Text = string.IsNullOrEmpty(dashboard.Profile.DisplayName) ? "用户" : dashboard.Profile.DisplayName;
             TxtEmail.Text = dashboard.Profile.Email;
+            _currentBio = dashboard.Profile.Bio ?? "";
             TxtTransCount.Text = dashboard.Stats.TranscriptionCount.ToString();
             TxtEvalHours.Text = dashboard.Stats.EvaluationDurationHours.ToString() + "h";
             TxtFavCount.Text = dashboard.Stats.FavoriteCount.ToString();
@@ -202,18 +204,13 @@ namespace SeeMusicApp
         // 修改个人资料
         private async void BtnEditProfile_Click(object sender, RoutedEventArgs e)
         {
-            // 使用 Microsoft.VisualBasic 需要在项目引用中添加
-            try
+            var editWindow = new EditProfileWindow(_httpClient, ApiBaseUrl);
+
+            var result = editWindow.ShowDialog();
+            
+            if (result == true)
             {
-                string newName = Microsoft.VisualBasic.Interaction.InputBox("请输入新的昵称：", "修改资料", TxtDisplayName.Text);
-                if (!string.IsNullOrEmpty(newName))
-                {
-                    await UpdateProfileInfo(null, newName);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("弹出输入框失败，请检查是否添加了 Microsoft.VisualBasic 引用。\n错误详情：" + ex.Message);
+                await LoadUserData();
             }
         }
 

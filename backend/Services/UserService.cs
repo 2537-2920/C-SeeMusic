@@ -145,6 +145,7 @@ public class UserService : IUserService
             ?? throw new InvalidOperationException("用户不存在");
 
         user.DisplayName = profile.DisplayName;
+        user.Email = profile.Email;
         user.Bio = profile.Bio;
         if (!string.IsNullOrEmpty(profile.AvatarUrl))
         {
@@ -152,6 +153,7 @@ public class UserService : IUserService
         }
 
         _dbContext.SaveChanges();
+        
         return GetCurrentUser(userId);
     }
 

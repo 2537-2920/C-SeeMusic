@@ -130,6 +130,13 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Compile Include="EditProfileWindow.xaml.cs">
+      <DependentUpon>EditProfileWindow.xaml</DependentUpon>
+    </Compile>
+    <Page Include="EditProfileWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
