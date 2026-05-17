@@ -141,7 +141,7 @@
 
             <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <TextBlock Text="LAST UPDATE" FontSize="10" Foreground="#94A3B8" FontWeight="Bold" HorizontalAlignment="Right"/>
-                <TextBlock Text="2026-04-03" FontSize="13" Foreground="#475569" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                <TextBlock x:Name="TxtLastUpdate" FontSize="13" Foreground="#475569" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,2,0,0"/>
             </StackPanel>
         </Grid>
 

@@ -28,6 +28,7 @@ namespace SeeMusicApp
 
         private async void ProfileWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            TxtLastUpdate.Text = DateTime.Now.ToString("yyyy-MM-dd");
             await LoadUserData();
         }
 
