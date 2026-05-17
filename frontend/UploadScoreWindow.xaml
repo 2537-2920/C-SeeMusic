@@ -204,7 +204,7 @@
                             </ComboBox>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="价格 (分) - 填0即为免费" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
+                            <TextBlock Text="价格（填0即为免费）" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
                             <TextBox x:Name="TxtPrice" Style="{StaticResource ModernTextBox}" Text="0" Height="48"/>
                         </StackPanel>
                     </Grid>
