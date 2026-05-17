@@ -80,33 +80,7 @@ using (var scope = app.Services.CreateScope())
         context.Database.Migrate();
         Console.WriteLine("--> [DB] Migration successful.");
         
-        // --- 核心业务字段暴力同步 (支持旧版 MySQL 并兼容大小写) ---
-        try {
-            var columns = new[] { 
-                "source_media_id INTEGER NULL", "cover_media_id INTEGER NULL",
-                "key_signature VARCHAR(50)", "time_signature VARCHAR(50)", "tempo INTEGER",
-                "status VARCHAR(50) DEFAULT 'published'", "source_type VARCHAR(50) DEFAULT 'audio'",
-                "is_public TINYINT DEFAULT 1", "price_cent INT DEFAULT 0",
-                "download_count INT DEFAULT 0", "favorite_count INT DEFAULT 0", 
-                "comment_count INT DEFAULT 0", "share_count INT DEFAULT 0",
-                "cover_url LongText", "file_url LongText",
-                "artist_name VARCHAR(255)", "arrangement_tag VARCHAR(100)",
-                "primary_category VARCHAR(100)", "published_at DATETIME"
-            };
-            
-            foreach (var col in columns) {
-                try { 
-                    // 尝试小写表名添加字段
-                    context.Database.ExecuteSqlRaw($"ALTER TABLE scores ADD {col};"); 
-                } catch { 
-                    // 如果失败，通常是因为字段已存在，或者表名是大写的，尝试大写
-                    try { context.Database.ExecuteSqlRaw($"ALTER TABLE Scores ADD {col};"); } catch { }
-                }
-            }
-            Console.WriteLine("--> [DB FIX] Schema checked and updated.");
-        } catch (Exception) {
-            // 彻底忽略这里的任何错误，不输出红字
-        }
+        // DB schema patches removed.
     }
     catch (Exception ex)
     {

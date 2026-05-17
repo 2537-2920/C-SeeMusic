@@ -133,7 +133,7 @@ namespace SeeMusicApp
 
                 if (string.IsNullOrWhiteSpace(account) || string.IsNullOrWhiteSpace(password))
                 {
-                    MessageBox.Show("账号和密码不能为空。", "登录失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    CustomMessageBox.Show("账号和密码不能为空。", "登录失败", MessageBoxType.Warning, this);
                     return;
                 }
 
@@ -143,7 +143,7 @@ namespace SeeMusicApp
                     LoginResponse loginResponse = await _apiClient.LoginAsync(account, password);
 
                     // 登录成功
-                    MessageBox.Show($"登录成功！欢迎回来，{loginResponse.User.DisplayName ?? loginResponse.User.Username}。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
+                    CustomMessageBox.Show($"登录成功！欢迎回来，{loginResponse.User.DisplayName ?? loginResponse.User.Username}。", "登录成功", MessageBoxType.Success, this);
 
                     // 核心修改：存储 Token 供后续 API 调用使用
                     ApiClient.AccessToken = loginResponse.AccessToken;
@@ -156,7 +156,7 @@ namespace SeeMusicApp
                 catch (Exception ex)
                 { 
                     // 登录失败，显示错误消息
-                    MessageBox.Show($"登录失败: {ex.Message}", "登录错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    CustomMessageBox.Show($"登录失败: {ex.Message}", "登录失败", MessageBoxType.Error, this);
                 }
             }
             else
@@ -170,21 +170,21 @@ namespace SeeMusicApp
 
                     if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
                     {
-                        MessageBox.Show("请完整填写注册信息。", "注册失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        CustomMessageBox.Show("请完整填写注册信息。", "注册失败", MessageBoxType.Warning, this);
                         return;
                     }
 
                     // 调用真实 API 注册
                     await _apiClient.RegisterAsync(username, email, password, confirm);
 
-                    MessageBox.Show("注册成功！请使用新账号登录。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
+                    CustomMessageBox.Show("注册成功！请使用新账号登录。", "注册成功", MessageBoxType.Success, this);
                     
                     // 注册成功后，自动帮你切换回登录模式
                     SwitchModeLogic();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"注册失败: {ex.Message}", "注册错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    CustomMessageBox.Show($"注册失败: {ex.Message}", "注册失败", MessageBoxType.Error, this);
                 }
             }
         }

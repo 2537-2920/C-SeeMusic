@@ -54,7 +54,7 @@ namespace SeeMusicApp
                     // 失败了则回滚状态
                     _isCurrentScoreFavorited = originalState;
                     UpdateFavoriteUI(_isCurrentScoreFavorited);
-                    MessageBox.Show("操作失败：请确认是否已登录。");
+                    CustomMessageBox.Show("操作失败：请确认是否已登录。", "收藏失败", MessageBoxType.Warning, this);
                 }
             }
             catch (Exception ex)
@@ -62,7 +62,7 @@ namespace SeeMusicApp
                 // 出错了则回滚状态
                 _isCurrentScoreFavorited = originalState;
                 UpdateFavoriteUI(_isCurrentScoreFavorited);
-                MessageBox.Show($"点赞出错: {ex.Message}");
+                CustomMessageBox.Show($"收藏出错: {ex.Message}", "收藏失败", MessageBoxType.Error, this);
             }
         }
 
@@ -96,12 +96,12 @@ namespace SeeMusicApp
                 }
                 else
                 {
-                    MessageBox.Show("评论失败，请检查登录状态");
+                    CustomMessageBox.Show("评论失败，请检查登录状态。", "发送失败", MessageBoxType.Warning, this);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"评论出错: {ex.Message}");
+                CustomMessageBox.Show($"评论出错: {ex.Message}", "评论失败", MessageBoxType.Error, this);
             }
         }
 
@@ -128,12 +128,12 @@ namespace SeeMusicApp
                     await ShowScoreDetail(_currentScoreId);
                     await LoadScores(SearchBox.Text, _currentCategory);
                     
-                    MessageBox.Show("乐谱已成功下载到本地！", "下载成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    CustomMessageBox.Show("乐谱已成功下载到本地！", "下载成功", MessageBoxType.Success, this);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"下载失败: {ex.Message}", "下载错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                CustomMessageBox.Show($"下载失败: {ex.Message}", "下载失败", MessageBoxType.Error, this);
             }
         }
 
@@ -336,9 +336,35 @@ namespace SeeMusicApp
                 {
                     DetailCategoryTag.Visibility = Visibility.Collapsed;
                 }
-                
-                DetailCover.Text = detail.Title.Substring(0, 1);
-                
+                // 设置详情封面图片或占位首字母
+                if (!string.IsNullOrEmpty(detail.CoverUrl))
+                {
+                    try
+                    {
+                        var bitmap = new BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        string fullUrl = detail.CoverUrl.StartsWith("http") ? detail.CoverUrl : "http://localhost:5000" + detail.CoverUrl;
+                        bitmap.UriSource = new Uri(fullUrl, UriKind.Absolute);
+                        bitmap.EndInit();
+
+                        DetailCoverImage.Source = bitmap;
+                        DetailCoverImage.Visibility = Visibility.Visible;
+                        DetailCoverPlaceholder.Visibility = Visibility.Collapsed;
+                    }
+                    catch
+                    {
+                        DetailCoverPlaceholder.Text = detail.Title.Length > 0 ? detail.Title.Substring(0, 1).ToUpper() : "?";
+                        DetailCoverPlaceholder.Visibility = Visibility.Visible;
+                        DetailCoverImage.Visibility = Visibility.Collapsed;
+                    }
+                }
+                else
+                {
+                    DetailCoverPlaceholder.Text = detail.Title.Length > 0 ? detail.Title.Substring(0, 1).ToUpper() : "?";
+                    DetailCoverPlaceholder.Visibility = Visibility.Visible;
+                    DetailCoverImage.Visibility = Visibility.Collapsed;
+                }
                 DetailFavoriteCount.Text = FormatCount(detail.FavoriteCount);
                 DetailDownloadCount.Text = FormatCount(detail.DownloadCount);
                 DetailCommentHeader.Text = $"社区评论 ({detail.CommentCount})";
@@ -359,7 +385,7 @@ namespace SeeMusicApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"获取详情失败: {ex.Message}");
+                CustomMessageBox.Show($"获取详情失败: {ex.Message}", "加载错误", MessageBoxType.Error, this);
             }
         }
 
@@ -436,7 +462,10 @@ namespace SeeMusicApp
                     {
                         DetailTitle.Text = data[0]; // 曲名
                         DetailAuthor.Text = data[1] + (data.Length >= 4 ? " · " + data[3] : ""); // 作者 · 标签
-                        DetailCover.Text = data[0].Substring(0, 1); // 封面取首字母代替
+                        
+                        DetailCoverPlaceholder.Text = data[0].Length > 0 ? data[0].Substring(0, 1).ToUpper() : "?";
+                        DetailCoverPlaceholder.Visibility = Visibility.Visible;
+                        DetailCoverImage.Visibility = Visibility.Collapsed;
                     }
                 }
 

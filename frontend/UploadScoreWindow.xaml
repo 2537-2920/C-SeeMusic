@@ -48,6 +48,92 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Premium Modern ComboBox Style -->
+        <Style x:Key="ModernComboBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1.2"/>
+            <Setter Property="Padding" Value="15,0,0,0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter x:Name="contentPresenter" Grid.Column="0" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" Margin="{TemplateBinding Padding}" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                                    <ToggleButton Grid.Column="0" Grid.ColumnSpan="2" Background="Transparent" BorderThickness="0" Focusable="false" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="Transparent">
+                                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#94A3B8" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="PART_Popup" AllowsTransparency="true" Grid.ColumnSpan="2" Placement="Bottom" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}" PopupAnimation="Slide">
+                                <Border x:Name="dropDownBorder" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="12" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,4,0,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="15" Color="Black" Opacity="0.06" ShadowDepth="3"/>
+                                    </Border.Effect>
+                                    <ScrollViewer x:Name="Templatesable" CanContentScroll="true" VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="false">
+                                <Setter TargetName="dropDownBorder" Property="Height" Value="95"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#457b9d"/>
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#457b9d"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Premium Modern ComboBoxItem Style -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Padding" Value="15,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#1E293B"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="itemBorder" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="8" Margin="4,2">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="itemBorder" Property="Background" Value="#F1F5F9"/>
+                                <Setter Property="Foreground" Value="#457b9d"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="itemBorder" Property="Background" Value="#457b9d"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Border CornerRadius="32" Background="White" BorderBrush="#F1F5F9" BorderThickness="1">
@@ -77,18 +163,18 @@
                 <StackPanel>
                     <!-- Cover Selection -->
                     <TextBlock Text="乐谱封面 (可选)" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,12"/>
-                    <Border x:Name="CoverPreview" Height="160" CornerRadius="16" BorderBrush="#E2E8F0" BorderThickness="2" Background="#F8FAFC" Margin="0,0,0,25" Cursor="Hand" MouseLeftButtonDown="BtnChangeCover_Click" ClipToBounds="True">
+                    <Border x:Name="CoverPreview" Width="180" Height="200" HorizontalAlignment="Left" CornerRadius="16" BorderBrush="#E2E8F0" BorderThickness="1.5" Background="White" Margin="0,0,0,25" Cursor="Hand" MouseLeftButtonDown="BtnChangeCover_Click" ClipToBounds="True">
                         <Grid>
                             <Image x:Name="ImgCover" Stretch="UniformToFill"/>
                             <StackPanel x:Name="PlaceholderIcon" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <Border Width="48" Height="48" Background="White" CornerRadius="24" Margin="0,0,0,10">
+                                <Border Width="44" Height="44" Background="#F8FAFC" CornerRadius="22" Margin="0,0,0,10">
                                     <Border.Effect>
-                                        <DropShadowEffect BlurRadius="10" Opacity="0.05" ShadowDepth="2"/>
+                                        <DropShadowEffect BlurRadius="8" Opacity="0.03" ShadowDepth="1"/>
                                     </Border.Effect>
-                                    <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#457b9d" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#457b9d" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="点击上传封面图片" FontSize="14" FontWeight="SemiBold" Foreground="#64748B" HorizontalAlignment="Center"/>
-                                <TextBlock Text="推荐比例 3:4" FontSize="12" Foreground="#94A3B8" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                                <TextBlock Text="点击上传封面" FontSize="13" FontWeight="SemiBold" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                <TextBlock Text="比例 9:10" FontSize="11" Foreground="#94A3B8" Margin="0,4,0,0" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -110,17 +196,15 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="分类" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
-                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="12" Height="48">
-                                <ComboBox x:Name="ComboCategory" Background="Transparent" BorderThickness="0" Padding="15,0" VerticalContentAlignment="Center" FontSize="14">
-                                    <ComboBoxItem Content="流行" IsSelected="True"/>
-                                    <ComboBoxItem Content="古典"/>
-                                    <ComboBoxItem Content="爵士"/>
-                                    <ComboBoxItem Content="ACG"/>
-                                </ComboBox>
-                            </Border>
+                            <ComboBox x:Name="ComboCategory" Style="{StaticResource ModernComboBox}" Height="48">
+                                <ComboBoxItem Content="流行" IsSelected="True"/>
+                                <ComboBoxItem Content="古典"/>
+                                <ComboBoxItem Content="爵士"/>
+                                <ComboBoxItem Content="ACG"/>
+                            </ComboBox>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="价格 (分) - 填0即为免费" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
+                            <TextBlock Text="价格（填0即为免费）" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
                             <TextBox x:Name="TxtPrice" Style="{StaticResource ModernTextBox}" Text="0" Height="48"/>
                         </StackPanel>
                     </Grid>

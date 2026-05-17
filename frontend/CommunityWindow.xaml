@@ -302,8 +302,11 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <Border Height="250" Background="#F8FAFC" CornerRadius="16" Margin="0,0,0,25">
-                                    <TextBlock x:Name="DetailCover" Text="QT" FontSize="80" FontWeight="Bold" Foreground="#E2E8F0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Height="250" Background="#F8FAFC" CornerRadius="16" Margin="0,0,0,25" ClipToBounds="True">
+                                    <Grid>
+                                        <TextBlock x:Name="DetailCoverPlaceholder" Text="QT" FontSize="80" FontWeight="Bold" Foreground="#E2E8F0" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Visible"/>
+                                        <Image x:Name="DetailCoverImage" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                    </Grid>
                                 </Border>
 
                                 <Grid Margin="0,0,0,30">
