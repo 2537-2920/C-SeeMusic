@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
@@ -46,12 +47,90 @@ namespace SeeMusicApp
                     if (apiResponse != null && apiResponse.Data != null)
                     {
                         UpdateUI(apiResponse.Data);
+                        await LoadPreferences();
                     }
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to load profile: {ex.Message}");
+            }
+        }
+
+        private async Task LoadPreferences()
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiBaseUrl}/users/me/preferences");
+                if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+                {
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
+                }
+                
+                var response = await _httpClient.SendAsync(request);
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse<UserPreferencesDto>>(json);
+                    
+                    if (apiResponse?.Data != null)
+                    {
+                        UpdateThemeButtonStyle(apiResponse.Data.Theme);
+                        UpdateExportFormatCheckboxes(apiResponse.Data.DefaultExportFormats as List<string>);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load preferences: {ex.Message}");
+            }
+        }
+
+        private void UpdateExportFormatCheckboxes(List<string> formats)
+        {
+            if (formats == null) return;
+
+            ChkMidi.IsChecked = formats.Contains("midi");
+            ChkXml.IsChecked = formats.Contains("musicxml");
+            ChkPdf.IsChecked = formats.Contains("pdf");
+            ChkPng.IsChecked = formats.Contains("png");
+        }
+
+        private async void ChkExportFormat_Changed(object sender, RoutedEventArgs e)
+        {
+            await SaveExportFormats();
+        }
+
+        private async Task SaveExportFormats()
+        {
+            try
+            {
+                var formats = new List<string>();
+                if (ChkMidi.IsChecked == true) formats.Add("midi");
+                if (ChkXml.IsChecked == true) formats.Add("musicxml");
+                if (ChkPdf.IsChecked == true) formats.Add("pdf");
+                if (ChkPng.IsChecked == true) formats.Add("png");
+
+                var request = new { theme = "light-music", defaultExportFormats = formats, syncPreferences = true };
+                var json = JsonConvert.SerializeObject(request);
+                
+                var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{ApiBaseUrl}/users/me/preferences");
+                if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+                {
+                    httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
+                }
+                httpRequest.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.SendAsync(httpRequest);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"Save export formats failed: {response.StatusCode} - {responseBody}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Save export formats error: {ex.Message}");
             }
         }
 
@@ -174,6 +253,77 @@ namespace SeeMusicApp
             TxtCache.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9CA3AF")); // 变成灰色
 
             MessageBox.Show("成功释放 1.2GB 系统缓存空间！", "清理完成", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void UpdateThemeButtonStyle(string selectedTheme)
+        {
+            var activeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#457b9d"));
+            var inactiveBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FAFAFA"));
+            var activeFg = new SolidColorBrush(Colors.White);
+            var inactiveFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64748B"));
+            var activeBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#457b9d"));
+            var inactiveBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E2E8F0"));
+
+            if (selectedTheme == "dark-jazz")
+            {
+                BtnThemeLight.Background = inactiveBg;
+                BtnThemeLight.Foreground = inactiveFg;
+                BtnThemeLight.BorderBrush = inactiveBorder;
+                BtnThemeLight.BorderThickness = new Thickness(1);
+                BtnThemeDark.Background = activeBg;
+                BtnThemeDark.Foreground = activeFg;
+                BtnThemeDark.BorderThickness = new Thickness(0);
+            }
+            else
+            {
+                BtnThemeLight.Background = activeBg;
+                BtnThemeLight.Foreground = activeFg;
+                BtnThemeLight.BorderThickness = new Thickness(0);
+                BtnThemeDark.Background = inactiveBg;
+                BtnThemeDark.Foreground = inactiveFg;
+                BtnThemeDark.BorderBrush = inactiveBorder;
+                BtnThemeDark.BorderThickness = new Thickness(1);
+            }
+        }
+
+        private async void BtnThemeLight_Click(object sender, RoutedEventArgs e)
+        {
+            await SavePreference("light-music");
+            UpdateThemeButtonStyle("light-music");
+        }
+
+        private async void BtnThemeDark_Click(object sender, RoutedEventArgs e)
+        {
+            await SavePreference("dark-jazz");
+            UpdateThemeButtonStyle("dark-jazz");
+        }
+
+        private async Task SavePreference(string theme)
+        {
+            try
+            {
+                var request = new { theme = theme, defaultExportFormats = new[] { "midi", "musicxml" }, syncPreferences = true };
+                var json = JsonConvert.SerializeObject(request);
+                
+                var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{ApiBaseUrl}/users/me/preferences");
+                if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+                {
+                    httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
+                }
+                httpRequest.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.SendAsync(httpRequest);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    MessageBox.Show($"保存偏好失败: {response.StatusCode}\n{responseBody}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"保存偏好异常: {ex.Message}", "异常", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

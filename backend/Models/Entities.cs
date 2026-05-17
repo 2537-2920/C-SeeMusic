@@ -15,6 +15,21 @@ public sealed class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastLoginAt { get; set; } = DateTime.UtcNow;
     public string Status { get; set; } = string.Empty;
+
+    // Navigation properties
+    public UserPreferences? Preferences { get; set; }
+}
+
+public sealed class UserPreferences
+{
+    public int UserId { get; set; }
+    public string Theme { get; set; } = "default";
+    public string DefaultExportFormats { get; set; } = "midi,musicxml";
+    public bool SyncEnabled { get; set; } = true;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public User? User { get; set; }
 }
 
 public sealed class RefreshToken

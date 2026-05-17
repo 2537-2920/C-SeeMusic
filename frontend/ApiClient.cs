@@ -388,4 +388,11 @@ namespace SeeMusicApp
         public string Message { get; set; }
         public UserDto User { get; set; }
     }
+
+    public class UserPreferencesDto
+    {
+        public string Theme { get; set; } = "light-music";
+        public List<string> DefaultExportFormats { get; set; } = new List<string>();
+        public bool SyncPreferences { get; set; } = true;
+    }
 }

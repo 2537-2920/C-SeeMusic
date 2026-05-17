@@ -10,4 +10,6 @@ public interface IUserService
     UserDto GetCurrentUser(int userId);
     UserDto UpdateProfile(int userId, UserDto profile);
     Task<DashboardResponse> GetDashboardAsync(int userId);
+    Task<UserPreferencesDto> GetPreferencesAsync(int userId);
+    Task<UserPreferencesDto> UpdatePreferencesAsync(int userId, UpdatePreferencesRequest request);
 }

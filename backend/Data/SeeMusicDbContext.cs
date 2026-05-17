@@ -14,6 +14,7 @@ public class SeeMusicDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<MediaFile> MediaFiles { get; set; }
+    public DbSet<UserPreferences> UserPreferences { get; set; }
     
     // 社区相关
     public DbSet<Score> Scores { get; set; }
@@ -42,6 +43,14 @@ public class SeeMusicDbContext : DbContext
             entity.Property(e => e.Bio).HasMaxLength(500);
             entity.HasIndex(e => e.Username).IsUnique();
             entity.HasIndex(e => e.Email).IsUnique();
+        });
+
+        // 配置 UserPreferences 实体的模型属性
+        modelBuilder.Entity<UserPreferences>(entity =>
+        {
+            entity.HasKey(e => e.UserId);
+            entity.ToTable("userpreferences");
+            entity.HasOne(e => e.User).WithOne(u => u.Preferences).HasForeignKey<UserPreferences>(e => e.UserId);
         });
 
         // 配置 RefreshToken 实体的模型属性

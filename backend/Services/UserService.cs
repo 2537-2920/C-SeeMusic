@@ -192,6 +192,53 @@ public class UserService : IUserService
         };
     }
 
+    public async Task<UserPreferencesDto> GetPreferencesAsync(int userId)
+    {
+        var user = await _dbContext.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException("用户不存在");
+
+        var prefs = await _dbContext.UserPreferences.FindAsync(userId);
+        
+        if (prefs == null)
+        {
+            return new UserPreferencesDto();
+        }
+
+        return new UserPreferencesDto
+        {
+            Theme = prefs.Theme,
+            DefaultExportFormats = prefs.DefaultExportFormats.Split(',').ToList(),
+            SyncPreferences = prefs.SyncEnabled
+        };
+    }
+
+    public async Task<UserPreferencesDto> UpdatePreferencesAsync(int userId, UpdatePreferencesRequest request)
+    {
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user == null) throw new InvalidOperationException("用户不存在");
+
+        var prefs = await _dbContext.UserPreferences.FindAsync(userId);
+
+        if (prefs == null)
+        {
+            prefs = new UserPreferences { UserId = userId };
+            _dbContext.UserPreferences.Add(prefs);
+        }
+
+        prefs.Theme = request.Theme;
+        prefs.DefaultExportFormats = string.Join(",", request.DefaultExportFormats);
+        prefs.SyncEnabled = request.SyncPreferences;
+        
+        _dbContext.SaveChanges();
+
+        return new UserPreferencesDto
+        {
+            Theme = prefs.Theme,
+            DefaultExportFormats = prefs.DefaultExportFormats.Split(',').ToList(),
+            SyncPreferences = prefs.SyncEnabled
+        };
+    }
+
     private UserDto MapToUserDto(User user)
     {
         return new UserDto

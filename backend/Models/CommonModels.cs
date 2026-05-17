@@ -48,3 +48,17 @@ public class WeeklyUsageItem
     public string Day { get; set; } = string.Empty;
     public int Value { get; set; }
 }
+
+public class UserPreferencesDto
+{
+    public string Theme { get; set; } = "light-music";
+    public List<string> DefaultExportFormats { get; set; } = new() { "midi", "musicxml" };
+    public bool SyncPreferences { get; set; } = true;
+}
+
+public class UpdatePreferencesRequest
+{
+    public string Theme { get; set; } = "light-music";
+    public List<string> DefaultExportFormats { get; set; } = new();
+    public bool SyncPreferences { get; set; }
+}

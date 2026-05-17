@@ -309,7 +309,7 @@
                                             <ColumnDefinition Width="15"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Background="#457b9d" Foreground="White" FontWeight="Medium" BorderThickness="0" Padding="0,12" Cursor="Hand">
+                                        <Button x:Name="BtnThemeLight" Grid.Column="0" Click="BtnThemeLight_Click" Background="#457b9d" Foreground="White" FontWeight="Medium" BorderThickness="0" Padding="0,12" Cursor="Hand">
                                             <Button.Resources>
                                                 <Style TargetType="Border">
                                                     <Setter Property="CornerRadius" Value="8"/>
@@ -317,7 +317,12 @@
                                             </Button.Resources>
                                             <TextBlock Text="浅色音乐风"/>
                                         </Button>
-                                        <Button Grid.Column="2" Style="{StaticResource OutlineBtnStyle}">
+                                        <Button x:Name="BtnThemeDark" Grid.Column="2" Click="BtnThemeDark_Click" Background="#FAFAFA" Foreground="#64748B" FontWeight="Medium" BorderBrush="#E2E8F0" BorderThickness="1" Padding="0,12" Cursor="Hand">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="8"/>
+                                                </Style>
+                                            </Button.Resources>
                                             <TextBlock Text="深夜爵士风"/>
                                         </Button>
                                     </Grid>
@@ -326,10 +331,10 @@
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="默认导出格式" FontSize="13" Foreground="#64748B" Margin="0,0,0,10"/>
                                     <WrapPanel Margin="0,0,0,25">
-                                        <CheckBox Content="MIDI" IsChecked="True"/>
-                                        <CheckBox Content="XML" IsChecked="True"/>
-                                        <CheckBox Content="PDF"/>
-                                        <CheckBox Content="PNG"/>
+                                        <CheckBox x:Name="ChkMidi" Content="MIDI" IsChecked="True" Checked="ChkExportFormat_Changed" Unchecked="ChkExportFormat_Changed"/>
+                                        <CheckBox x:Name="ChkXml" Content="XML" IsChecked="True" Checked="ChkExportFormat_Changed" Unchecked="ChkExportFormat_Changed"/>
+                                        <CheckBox x:Name="ChkPdf" Content="PDF" Checked="ChkExportFormat_Changed" Unchecked="ChkExportFormat_Changed"/>
+                                        <CheckBox x:Name="ChkPng" Content="PNG" Checked="ChkExportFormat_Changed" Unchecked="ChkExportFormat_Changed"/>
                                     </WrapPanel>
 
                                     <Button Background="Transparent" BorderThickness="0" HorizontalAlignment="Left" Cursor="Hand" Margin="0,15,0,0" Click="BtnClearCache_Click">

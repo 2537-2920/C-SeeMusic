@@ -51,6 +51,22 @@ public class UsersController : ControllerBase
         return Ok(new ApiResponse<DashboardResponse> { Data = dashboard });
     }
 
+    [HttpGet("me/preferences")]
+    public async Task<ActionResult<ApiResponse<UserPreferencesDto>>> GetPreferences()
+    {
+        var userId = GetCurrentUserId();
+        var preferences = await _userService.GetPreferencesAsync(userId);
+        return Ok(new ApiResponse<UserPreferencesDto> { Data = preferences });
+    }
+
+    [HttpPut("me/preferences")]
+    public async Task<ActionResult<ApiResponse<UserPreferencesDto>>> UpdatePreferences([FromBody] UpdatePreferencesRequest request)
+    {
+        var userId = GetCurrentUserId();
+        var preferences = await _userService.UpdatePreferencesAsync(userId, request);
+        return Ok(new ApiResponse<UserPreferencesDto> { Data = preferences });
+    }
+
     private int GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
