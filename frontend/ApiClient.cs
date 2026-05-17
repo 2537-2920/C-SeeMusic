@@ -343,6 +343,33 @@ namespace SeeMusicApp
         public int FavoriteCount { get; set; }
     }
 
+    public class DashboardResponse
+    {
+        public DashboardProfile Profile { get; set; } = new DashboardProfile();
+        public DashboardStats Stats { get; set; } = new DashboardStats();
+        public List<WeeklyUsageItem> WeeklyUsage { get; set; } = new List<WeeklyUsageItem>();
+    }
+
+    public class DashboardProfile
+    {
+        public string DisplayName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string AvatarUrl { get; set; }
+    }
+
+    public class DashboardStats
+    {
+        public int TranscriptionCount { get; set; }
+        public int EvaluationDurationHours { get; set; }
+        public int FavoriteCount { get; set; }
+    }
+
+    public class WeeklyUsageItem
+    {
+        public string Day { get; set; } = "";
+        public int Value { get; set; }
+    }
+
     public class ApiResponse<T>
     {
         public int Code { get; set; }

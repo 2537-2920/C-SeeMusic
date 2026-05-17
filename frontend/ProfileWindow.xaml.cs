@@ -31,11 +31,17 @@ namespace SeeMusicApp
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{ApiBaseUrl}/users/me");
+                var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiBaseUrl}/users/me/dashboard");
+                if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+                {
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
+                }
+                
+                var response = await _httpClient.SendAsync(request);
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse<UserDto>>(json);
+                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse<DashboardResponse>>(json);
                     
                     if (apiResponse != null && apiResponse.Data != null)
                     {
@@ -49,19 +55,19 @@ namespace SeeMusicApp
             }
         }
 
-        private void UpdateUI(UserDto user)
+        private void UpdateUI(DashboardResponse dashboard)
         {
-            TxtDisplayName.Text = string.IsNullOrEmpty(user.DisplayName) ? user.Username : user.DisplayName;
-            TxtEmail.Text = user.Email;
-            TxtTransCount.Text = user.TranscriptionCount.ToString();
-            TxtEvalHours.Text = user.EvaluationDurationHours.ToString() + "h";
-            TxtFavCount.Text = user.FavoriteCount.ToString();
+            TxtDisplayName.Text = string.IsNullOrEmpty(dashboard.Profile.DisplayName) ? "用户" : dashboard.Profile.DisplayName;
+            TxtEmail.Text = dashboard.Profile.Email;
+            TxtTransCount.Text = dashboard.Stats.TranscriptionCount.ToString();
+            TxtEvalHours.Text = dashboard.Stats.EvaluationDurationHours.ToString() + "h";
+            TxtFavCount.Text = dashboard.Stats.FavoriteCount.ToString();
 
-            if (!string.IsNullOrEmpty(user.AvatarUrl))
+            if (!string.IsNullOrEmpty(dashboard.Profile.AvatarUrl))
             {
                 try
                 {
-                    string url = user.AvatarUrl.StartsWith("http") ? user.AvatarUrl : "http://localhost:5000" + user.AvatarUrl;
+                    string url = dashboard.Profile.AvatarUrl.StartsWith("http") ? dashboard.Profile.AvatarUrl : "http://localhost:5000" + dashboard.Profile.AvatarUrl;
                     ImgAvatar.ImageSource = new BitmapImage(new Uri(url));
                 }
                 catch { }
