@@ -108,6 +108,8 @@ public sealed class TranscriptionService : ITranscriptionService
             throw new InvalidOperationException("未找到对应的识谱任务。");
         }
 
+        var options = DeserializeOptions(job.OptionsJson);
+        var beatAnalysis = DeserializeBeatAnalysis(job.BeatAnalysisJson);
         var trackSummaries = job.ScoreDbId.HasValue
             ? await _dbContext.ScoreTracks
                 .Where(item => item.ScoreDbId == job.ScoreDbId.Value)
@@ -121,6 +123,7 @@ public sealed class TranscriptionService : ITranscriptionService
                     RangeLowMidi = item.RangeLowMidi,
                     RangeHighMidi = item.RangeHighMidi,
                     IsGenerated = item.IsGenerated,
+                    Origin = ResolveTrackOrigin(item.HandRole, item.IsGenerated),
                     SummaryText = item.SummaryText
                 })
                 .ToListAsync(cancellationToken)
@@ -135,8 +138,13 @@ public sealed class TranscriptionService : ITranscriptionService
             ScoreId = await ResolveScorePublicIdAsync(job.ScoreDbId, cancellationToken),
             DetectedTempoBpm = job.DetectedTempoBpm,
             DetectedTimeSignature = job.DetectedTimeSignature,
+            DetectedTimeSignatureConfidence = beatAnalysis.TimeSignatureConfidence > 0
+                ? beatAnalysis.TimeSignatureConfidence
+                : null,
             MeasureCount = job.MeasureCount,
             EstimatedPageCount = job.EstimatedPageCount,
+            TrackBuildMode = ResolveTrackBuildMode(trackSummaries, options),
+            RhythmGridSource = ResolveRhythmGridSource(beatAnalysis),
             TrackSummaries = trackSummaries,
             Warnings = DeserializeList(job.WarningMessagesJson)
         };
@@ -164,6 +172,17 @@ public sealed class TranscriptionService : ITranscriptionService
             .ThenBy(item => item.BeatStart)
             .ThenBy(item => item.SortOrder)
             .ToListAsync(cancellationToken);
+        var transcriptionJob = await _dbContext.TranscriptionJobs
+            .Where(item => item.ScoreDbId == score.Id)
+            .OrderByDescending(item => item.UpdatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        var beatAnalysis = transcriptionJob == null
+            ? new BeatAnalysisResult()
+            : DeserializeBeatAnalysis(transcriptionJob.BeatAnalysisJson);
+        var options = transcriptionJob == null
+            ? new TranscriptionOptionsRequest()
+            : DeserializeOptions(transcriptionJob.OptionsJson);
+        var analysisSummary = DeserializeAnalysisSummary(score.AnalysisSummaryJson);
 
         var tracks = trackEntities
             .Select(item => new ScoreTrackResponse
@@ -175,6 +194,7 @@ public sealed class TranscriptionService : ITranscriptionService
                 RangeLowMidi = item.RangeLowMidi,
                 RangeHighMidi = item.RangeHighMidi,
                 IsGenerated = item.IsGenerated,
+                Origin = ResolveTrackOrigin(item.HandRole, item.IsGenerated),
                 SummaryText = item.SummaryText
             })
             .ToList();
@@ -205,11 +225,18 @@ public sealed class TranscriptionService : ITranscriptionService
             TempoBpm = score.TempoBpm,
             TimeSignature = score.TimeSignature,
             KeySignature = score.KeySignature,
+            KeyConfidence = analysisSummary.KeyConfidence,
+            TimeSignatureConfidence = beatAnalysis.TimeSignatureConfidence > 0
+                ? beatAnalysis.TimeSignatureConfidence
+                : null,
             MeasureCount = score.MeasureCount,
             EstimatedPageCount = score.EstimatedPageCount,
             MusicXmlContent = score.MusicXmlContent,
+            PreviewRenderMode = "generated_svg_projection",
+            TrackBuildMode = ResolveTrackBuildMode(tracks, options),
+            RhythmGridSource = ResolveRhythmGridSource(beatAnalysis),
             Tracks = tracks,
-            AnalysisSummary = DeserializeAnalysisSummary(score.AnalysisSummaryJson),
+            AnalysisSummary = analysisSummary,
             PreviewPages = ScorePreviewRenderer.RenderPages(
                 score.Title,
                 score.TempoBpm,
@@ -456,6 +483,39 @@ public sealed class TranscriptionService : ITranscriptionService
             .Where(item => item.Id == scoreDbId.Value)
             .Select(item => item.ScoreId)
             .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    private static string ResolveTrackOrigin(string handRole, bool isGenerated)
+    {
+        if (isGenerated)
+        {
+            return "arranged_accompaniment";
+        }
+
+        return string.Equals(handRole, "right", StringComparison.OrdinalIgnoreCase)
+            ? "extracted_melody"
+            : "detected_track";
+    }
+
+    private static string ResolveTrackBuildMode(IReadOnlyCollection<ScoreTrackResponse> tracks, TranscriptionOptionsRequest options)
+    {
+        if (tracks.Count > 0)
+        {
+            return tracks.Any(track => track.IsGenerated)
+                ? "melody_extraction_with_arranged_accompaniment"
+                : "melody_extraction_only";
+        }
+
+        return options.SeparateAccompaniment
+            ? "melody_extraction_with_arranged_accompaniment"
+            : "melody_extraction_only";
+    }
+
+    private static string ResolveRhythmGridSource(BeatAnalysisResult beatAnalysis)
+    {
+        return string.IsNullOrWhiteSpace(beatAnalysis.GridSource)
+            ? string.Empty
+            : beatAnalysis.GridSource;
     }
 
     private static TranscriptionOptionsRequest DeserializeOptions(string json)

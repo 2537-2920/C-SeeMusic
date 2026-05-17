@@ -71,7 +71,7 @@ public sealed class BeatAnalysisService : IBeatAnalysisService
         var tempoBpm = 60.0 * sampleRate / (bestCandidate.Lag * hopSize);
         var stability = CalculateStability(beatTimes);
         var confidence = CalculateConfidence(tempoCandidates, bestCandidate, onsetEnvelope, beatFrames);
-        var numerator = EstimateTimeSignature(beatFrames, onsetEnvelope);
+        var timeSignature = EstimateTimeSignature(beatFrames, onsetEnvelope);
 
         return new BeatAnalysisResult
         {
@@ -80,9 +80,11 @@ public sealed class BeatAnalysisService : IBeatAnalysisService
             BeatTimes = beatTimes,
             Stability = Math.Round(stability, 3),
             Confidence = Math.Round(confidence, 3),
-            TimeSignatureNumerator = numerator,
+            TimeSignatureNumerator = timeSignature.Numerator,
             TimeSignatureDenominator = 4,
-            Summary = $"检测到约 {tempoBpm:F1} BPM，节奏稳定度 {stability:P0}，推测为 {numerator}/4 拍。"
+            TimeSignatureConfidence = Math.Round(timeSignature.Confidence, 3),
+            GridSource = "detected",
+            Summary = $"检测到约 {tempoBpm:F1} BPM，节奏稳定度 {stability:P0}，推测为 {timeSignature.Numerator}/4 拍。"
         };
     }
 
@@ -318,16 +320,28 @@ public sealed class BeatAnalysisService : IBeatAnalysisService
         return Math.Clamp(normalizedPeak * 0.45 + dominance * 0.35 + beatStrength * 0.20, 0.0, 1.0);
     }
 
-    private static int EstimateTimeSignature(IReadOnlyList<int> beatFrames, double[] onsetEnvelope)
+    private static TimeSignatureEstimate EstimateTimeSignature(IReadOnlyList<int> beatFrames, double[] onsetEnvelope)
     {
         if (beatFrames.Count < 8)
         {
-            return 4;
+            return new TimeSignatureEstimate(4, 0.25);
         }
 
-        var tripleContrast = ComputeAccentContrast(beatFrames, onsetEnvelope, 3);
-        var quadrupleContrast = ComputeAccentContrast(beatFrames, onsetEnvelope, 4);
-        return tripleContrast > quadrupleContrast * 1.15 ? 3 : 4;
+        var estimates = new[]
+        {
+            new { Numerator = 2, Contrast = ComputeAccentContrast(beatFrames, onsetEnvelope, 2) },
+            new { Numerator = 3, Contrast = ComputeAccentContrast(beatFrames, onsetEnvelope, 3) },
+            new { Numerator = 4, Contrast = ComputeAccentContrast(beatFrames, onsetEnvelope, 4) }
+        }
+            .OrderByDescending(item => item.Contrast)
+            .ToArray();
+
+        var best = estimates[0];
+        var rival = estimates[1];
+        var confidence = best.Contrast <= 0
+            ? 0.0
+            : Math.Clamp((best.Contrast - rival.Contrast) / Math.Max(best.Contrast, 0.0001), 0.0, 1.0);
+        return new TimeSignatureEstimate(best.Numerator, confidence);
     }
 
     private static double ComputeAccentContrast(IReadOnlyList<int> beatFrames, double[] onsetEnvelope, int groupSize)
@@ -419,11 +433,13 @@ public sealed class BeatAnalysisService : IBeatAnalysisService
         return new BeatAnalysisResult
         {
             IsAvailable = false,
+            GridSource = "unavailable",
             Summary = summary
         };
     }
 
     private sealed record TempoCandidate(int Lag, double Score);
+    private sealed record TimeSignatureEstimate(int Numerator, double Confidence);
 }
 
 internal static class WavAudioReader

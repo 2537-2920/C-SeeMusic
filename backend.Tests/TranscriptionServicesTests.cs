@@ -50,12 +50,94 @@ public class TranscriptionServicesTests
             Assert.Equal("succeeded", result.Status);
             Assert.NotEmpty(result.MusicXmlContent);
             Assert.Contains("<score-partwise", result.MusicXmlContent, StringComparison.Ordinal);
+            Assert.Contains("<part id=\"P1\">", result.MusicXmlContent, StringComparison.Ordinal);
+            Assert.Contains("<staves>2</staves>", result.MusicXmlContent, StringComparison.Ordinal);
+            Assert.Contains("<clef number=\"1\">", result.MusicXmlContent, StringComparison.Ordinal);
+            Assert.Contains("<clef number=\"2\">", result.MusicXmlContent, StringComparison.Ordinal);
+            Assert.Contains("<staff>1</staff>", result.MusicXmlContent, StringComparison.Ordinal);
+            Assert.Contains("<staff>2</staff>", result.MusicXmlContent, StringComparison.Ordinal);
+            Assert.Contains("<backup>", result.MusicXmlContent, StringComparison.Ordinal);
             Assert.Equal(2, result.Tracks.Count);
+            Assert.Equal("extracted_melody", result.Tracks[0].Origin);
+            Assert.Equal("arranged_accompaniment", result.Tracks[1].Origin);
             Assert.True(result.Tracks[0].Notes.Count >= 4);
             Assert.True(result.Tracks[1].Notes.Count >= 4);
             Assert.True(result.MeasureCount >= 1);
             Assert.True(result.EstimatedPageCount >= 1);
+            Assert.Equal("generated_svg_projection", result.PreviewRenderMode);
+            Assert.Equal("melody_extraction_with_arranged_accompaniment", result.TrackBuildMode);
+            Assert.InRange(result.KeyConfidence, 0.0, 1.0);
+            Assert.NotNull(result.BeatAnalysis);
+            Assert.False(string.IsNullOrWhiteSpace(result.BeatAnalysis.GridSource));
             Assert.False(string.IsNullOrWhiteSpace(result.AnalysisSummary.MelodySummary));
+            Assert.Contains("双手钢琴重构", result.AnalysisSummary.TrackBuildSummary, StringComparison.Ordinal);
+            Assert.False(string.IsNullOrWhiteSpace(result.AnalysisSummary.RhythmSummary));
+        }
+        finally
+        {
+            File.Delete(wavePath);
+        }
+    }
+
+    [Fact]
+    public void PianoTranscriptionService_ShouldSupportMelodyOnlyMode_WhenAccompanimentIsDisabled()
+    {
+        var wavePath = CreateWaveFile(CreateMelody(new[] { 440.0, 493.88, 523.25, 587.33, 659.25, 698.46 }, 0.4, 44100));
+
+        try
+        {
+            var service = new PianoTranscriptionService(
+                new BeatAnalysisService(),
+                Options.Create(new TranscriptionProcessingOptions()));
+
+            var result = service.Transcribe(wavePath, "仅旋律测试", new TranscriptionOptionsRequest
+            {
+                Mode = "piano",
+                SeparateMelody = true,
+                SeparateAccompaniment = false,
+                AnalyzeRhythm = true
+            });
+
+            Assert.Equal("succeeded", result.Status);
+            Assert.Single(result.Tracks);
+            Assert.Equal("extracted_melody", result.Tracks[0].Origin);
+            Assert.Equal("melody_extraction_only", result.TrackBuildMode);
+            Assert.Contains("仅输出右手主旋律轨道", result.AnalysisSummary.TrackBuildSummary, StringComparison.Ordinal);
+            Assert.Contains(result.Warnings, warning => warning.Contains("关闭左手伴奏自动编配", StringComparison.Ordinal));
+        }
+        finally
+        {
+            File.Delete(wavePath);
+        }
+    }
+
+    [Fact]
+    public void PianoTranscriptionService_ShouldUseDisabledRhythmGrid_WhenRhythmAnalysisIsTurnedOff()
+    {
+        var wavePath = CreateWaveFile(CreateMelody(new[] { 440.0, 493.88, 523.25, 587.33, 659.25, 698.46 }, 0.4, 44100));
+
+        try
+        {
+            var service = new PianoTranscriptionService(
+                new BeatAnalysisService(),
+                Options.Create(new TranscriptionProcessingOptions()));
+
+            var result = service.Transcribe(wavePath, "关闭节拍测试", new TranscriptionOptionsRequest
+            {
+                Mode = "piano",
+                SeparateMelody = true,
+                SeparateAccompaniment = true,
+                AnalyzeRhythm = false
+            });
+
+            Assert.Equal("succeeded", result.Status);
+            Assert.NotNull(result.BeatAnalysis);
+            Assert.False(result.BeatAnalysis.IsAvailable);
+            Assert.Equal("disabled", result.BeatAnalysis.GridSource);
+            Assert.Equal(4, result.BeatAnalysis.TimeSignatureNumerator);
+            Assert.Contains("已关闭节拍识别", result.BeatAnalysis.Summary, StringComparison.Ordinal);
+            Assert.Contains("已关闭节拍识别", result.AnalysisSummary.RhythmSummary, StringComparison.Ordinal);
+            Assert.Contains(result.Warnings, warning => warning.Contains("已关闭节拍识别", StringComparison.Ordinal));
         }
         finally
         {

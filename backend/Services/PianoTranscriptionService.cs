@@ -57,9 +57,20 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
             };
         }
 
+        if (!normalizedOptions.SeparateMelody)
+        {
+            return new PianoTranscriptionResult
+            {
+                Status = "failed",
+                ErrorMessage = "当前钢琴识谱必须启用旋律提取。"
+            };
+        }
+
         try
         {
-            var beatAnalysis = _beatAnalysisService.AnalyzeFile(preparedAudioPath);
+            var beatAnalysis = normalizedOptions.AnalyzeRhythm
+                ? _beatAnalysisService.AnalyzeFile(preparedAudioPath)
+                : CreateDisabledBeatAnalysis();
             var audioData = WavAudioReader.Read(preparedAudioPath);
             var contour = ExtractPitchContour(audioData);
             if (contour.Count < 8)
@@ -77,16 +88,11 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
             }
 
             var warnings = new List<string>();
-            var beatDurationSeconds = ResolveBeatDurationSeconds(beatAnalysis, contour, warnings);
-            var timeSignatureNumerator = beatAnalysis.IsAvailable
-                ? Math.Clamp(beatAnalysis.TimeSignatureNumerator, 3, 4)
-                : 4;
-            var tempoBpm = beatAnalysis.IsAvailable
-                ? Math.Max(60.0, beatAnalysis.TempoBpm)
-                : Math.Round(60.0 / beatDurationSeconds, 1);
-            var quantization = beatAnalysis.IsAvailable && beatAnalysis.Stability >= 0.75 && beatAnalysis.Confidence >= 0.55
-                ? 0.25
-                : 0.5;
+            var rhythmGrid = ResolveRhythmGrid(beatAnalysis, contour, normalizedOptions.AnalyzeRhythm, warnings);
+            var beatDurationSeconds = rhythmGrid.BeatDurationSeconds;
+            var timeSignatureNumerator = rhythmGrid.TimeSignatureNumerator;
+            var tempoBpm = rhythmGrid.TempoBpm;
+            var quantization = rhythmGrid.Quantization;
 
             var keyDetection = DetectKey(contour);
             if (!keyDetection.IsReliable)
@@ -109,22 +115,34 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
             var accompanimentNotes = normalizedOptions.SeparateAccompaniment
                 ? BuildAccompanimentNotes(melodyNotes, keyDetection, timeSignatureNumerator)
                 : new List<GeneratedNoteResult>();
+            if (!normalizedOptions.SeparateAccompaniment)
+            {
+                warnings.Add("当前已关闭左手伴奏自动编配，本次结果只保留右手旋律轨道。");
+            }
+
             var measureCount = Math.Max(
                 melodyNotes.Max(note => note.MeasureNo),
                 accompanimentNotes.Count == 0 ? 1 : accompanimentNotes.Max(note => note.MeasureNo));
 
             var tracks = new List<GeneratedTrackResult>
             {
-                BuildTrack("右手旋律", "right", false, melodyNotes, "根据稳定音高轮廓切分并量化生成右手旋律。"),
-                BuildTrack(
+                BuildTrack("右手旋律", "right", false, "extracted_melody", melodyNotes, "根据稳定音高轮廓切分并量化生成右手旋律。"),
+            };
+
+            if (normalizedOptions.SeparateAccompaniment)
+            {
+                tracks.Add(BuildTrack(
                     "左手伴奏",
                     "left",
                     true,
+                    "arranged_accompaniment",
                     accompanimentNotes,
                     timeSignatureNumerator == 3
                         ? "按 3/4 规则生成低音加两拍支撑的左手伴奏。"
-                        : "按 4/4 规则生成低音与分解和弦结合的左手伴奏。")
-            };
+                        : timeSignatureNumerator == 2
+                            ? "按 2/4 规则生成低音与支撑和声的左手伴奏。"
+                            : "按 4/4 规则生成低音与分解和弦结合的左手伴奏。"));
+            }
 
             var titleText = string.IsNullOrWhiteSpace(title) ? "我的智能识谱项目" : title.Trim();
             var keySignature = FormatKeySignature(keyDetection);
@@ -137,27 +155,28 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
             return new PianoTranscriptionResult
             {
                 Status = "succeeded",
-                BeatAnalysis = beatAnalysis.IsAvailable
-                    ? beatAnalysis
-                    : new BeatAnalysisResult
-                    {
-                        IsAvailable = false,
-                        TempoBpm = tempoBpm,
-                        TimeSignatureNumerator = timeSignatureNumerator,
-                        TimeSignatureDenominator = 4,
-                        Summary = warnings.Count == 0 ? "已使用默认节拍网格完成识谱。" : warnings[0]
-                    },
+                BeatAnalysis = BuildOutputBeatAnalysis(beatAnalysis, rhythmGrid, warnings),
                 KeySignature = keySignature,
+                KeyConfidence = Math.Round(keyDetection.Confidence, 3),
                 MusicXmlContent = musicXml,
                 MeasureCount = measureCount,
                 EstimatedPageCount = estimatedPageCount,
+                PreviewRenderMode = "generated_svg_projection",
+                TrackBuildMode = normalizedOptions.SeparateAccompaniment
+                    ? "melody_extraction_with_arranged_accompaniment"
+                    : "melody_extraction_only",
                 AnalysisSummary = new ScoreAnalysisSummaryResponse
                 {
                     MelodySummary = $"右手共生成 {melodyNotes.Count} 个旋律音符，量化粒度为 {(quantization < 0.5 ? "1/16" : "1/8")}。",
                     AccompanimentSummary = accompanimentNotes.Count == 0
                         ? "本次未生成左手伴奏。"
                         : $"左手共生成 {accompanimentNotes.Count} 个伴奏音符，基于 {keySignature} 调性中心规则生成。",
-                    AssignmentSummary = "高音区与主旋律优先分配到右手，低音区与和声支撑分配到左手。"
+                    AssignmentSummary = "高音区与主旋律优先分配到右手，低音区与和声支撑分配到左手。",
+                    TrackBuildSummary = normalizedOptions.SeparateAccompaniment
+                        ? "当前结果采用“旋律提取 + 左手规则编配”的双手钢琴重构流程。"
+                        : "当前结果采用“旋律提取”流程，仅输出右手主旋律轨道。",
+                    KeyConfidence = Math.Round(keyDetection.Confidence, 3),
+                    RhythmSummary = rhythmGrid.Summary
                 },
                 Tracks = tracks,
                 Warnings = warnings
@@ -177,6 +196,7 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
         string name,
         string handRole,
         bool isGenerated,
+        string origin,
         List<GeneratedNoteResult> notes,
         string summaryText)
     {
@@ -186,19 +206,34 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
             HandRole = handRole,
             Instrument = "piano",
             IsGenerated = isGenerated,
+            Origin = origin,
             SummaryText = summaryText,
             Notes = notes
         };
     }
 
-    private static double ResolveBeatDurationSeconds(
+    private static ResolvedRhythmGrid ResolveRhythmGrid(
         BeatAnalysisResult beatAnalysis,
         IReadOnlyList<PitchContourPoint> contour,
+        bool analyzeRhythm,
         ICollection<string> warnings)
     {
+        if (!analyzeRhythm)
+        {
+            warnings.Add("已关闭节拍识别，当前结果按默认 96 BPM / 4/4 节拍网格量化。");
+            return new ResolvedRhythmGrid(60.0 / 96.0, 4, 96.0, 0.5, "disabled", 0.0, "已关闭节拍识别，当前按默认 96 BPM / 4/4 节拍网格生成。");
+        }
+
         if (beatAnalysis.IsAvailable && beatAnalysis.TempoBpm > 0)
         {
-            return 60.0 / beatAnalysis.TempoBpm;
+            return new ResolvedRhythmGrid(
+                60.0 / beatAnalysis.TempoBpm,
+                Math.Clamp(beatAnalysis.TimeSignatureNumerator, 2, 4),
+                Math.Max(60.0, beatAnalysis.TempoBpm),
+                beatAnalysis.Stability >= 0.75 && beatAnalysis.Confidence >= 0.55 ? 0.25 : 0.5,
+                string.IsNullOrWhiteSpace(beatAnalysis.GridSource) ? "detected" : beatAnalysis.GridSource,
+                beatAnalysis.TimeSignatureConfidence,
+                beatAnalysis.Summary);
         }
 
         if (contour.Count > 6)
@@ -216,12 +251,59 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
             if (noteLikeGaps.Count > 2)
             {
                 warnings.Add("未检测到可靠拍点，已根据旋律停顿估算节拍网格。");
-                return Math.Clamp(noteLikeGaps.OrderBy(value => value).ElementAt(noteLikeGaps.Count / 2), 0.35, 0.8);
+                var estimatedBeatDuration = Math.Clamp(noteLikeGaps.OrderBy(value => value).ElementAt(noteLikeGaps.Count / 2), 0.35, 0.8);
+                return new ResolvedRhythmGrid(
+                    estimatedBeatDuration,
+                    4,
+                    Math.Round(60.0 / estimatedBeatDuration, 1),
+                    0.5,
+                    "pause_estimated",
+                    0.0,
+                    "未检测到可靠拍点，已根据旋律停顿估算节拍网格。");
             }
         }
 
         warnings.Add("未检测到可靠拍点，已使用默认 96 BPM / 4/4 节拍网格生成结果。");
-        return 60.0 / 96.0;
+        return new ResolvedRhythmGrid(60.0 / 96.0, 4, 96.0, 0.5, "default_fallback", 0.0, "未检测到可靠拍点，已使用默认 96 BPM / 4/4 节拍网格生成结果。");
+    }
+
+    private static BeatAnalysisResult CreateDisabledBeatAnalysis()
+    {
+        return new BeatAnalysisResult
+        {
+            IsAvailable = false,
+            TempoBpm = 96.0,
+            TimeSignatureNumerator = 4,
+            TimeSignatureDenominator = 4,
+            GridSource = "disabled",
+            Summary = "已关闭节拍识别，当前按默认 96 BPM / 4/4 节拍网格生成。"
+        };
+    }
+
+    private static BeatAnalysisResult BuildOutputBeatAnalysis(
+        BeatAnalysisResult beatAnalysis,
+        ResolvedRhythmGrid rhythmGrid,
+        IReadOnlyCollection<string> warnings)
+    {
+        if (beatAnalysis.IsAvailable)
+        {
+            beatAnalysis.GridSource = string.IsNullOrWhiteSpace(beatAnalysis.GridSource) ? rhythmGrid.GridSource : beatAnalysis.GridSource;
+            beatAnalysis.TimeSignatureConfidence = beatAnalysis.TimeSignatureConfidence <= 0
+                ? rhythmGrid.TimeSignatureConfidence
+                : beatAnalysis.TimeSignatureConfidence;
+            return beatAnalysis;
+        }
+
+        return new BeatAnalysisResult
+        {
+            IsAvailable = false,
+            TempoBpm = rhythmGrid.TempoBpm,
+            TimeSignatureNumerator = rhythmGrid.TimeSignatureNumerator,
+            TimeSignatureDenominator = 4,
+            TimeSignatureConfidence = rhythmGrid.TimeSignatureConfidence,
+            GridSource = rhythmGrid.GridSource,
+            Summary = warnings.Count == 0 ? rhythmGrid.Summary : warnings.First()
+        };
     }
 
     private static List<PitchContourPoint> ExtractPitchContour(WavAudioData audioData)
@@ -372,6 +454,13 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
             var thirdMidi = FindClosestMidi((chordRoot + (isMinor ? 3 : 4)) % 12, 53);
             var fifthMidi = FindClosestMidi((chordRoot + 7) % 12, 57);
 
+            if (timeSignatureNumerator == 2)
+            {
+                notes.Add(CreateNote(measure, 0, DurationToken.Quarter, bassRootMidi, "bass", (measure - 1) * 2, false));
+                notes.Add(CreateNote(measure, 1, DurationToken.Quarter, thirdMidi, "bass", (measure - 1) * 2 + 1, true));
+                continue;
+            }
+
             if (timeSignatureNumerator == 3)
             {
                 notes.Add(CreateNote(measure, 0, DurationToken.Quarter, bassRootMidi, "bass", (measure - 1) * 3, false));
@@ -445,7 +534,7 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
     {
         if (contour.Count < 8)
         {
-            return new KeyDetectionResult("C", "major", 0, false);
+            return new KeyDetectionResult("C", "major", 0, false, 0.0);
         }
 
         var pitchClassWeights = new double[12];
@@ -460,11 +549,16 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
         var minorBest = GetBestProfileMatch(pitchClassWeights, MinorProfile);
         var useMajor = majorBest.Score >= minorBest.Score;
         var scoreGap = Math.Abs(majorBest.Score - minorBest.Score);
+        var bestScore = Math.Max(majorBest.Score, minorBest.Score);
+        var confidence = bestScore <= 0
+            ? 0.0
+            : Math.Clamp(scoreGap / bestScore, 0.0, 1.0);
         return new KeyDetectionResult(
             SharpPitchNames[useMajor ? majorBest.Root : minorBest.Root],
             useMajor ? "major" : "minor",
             useMajor ? majorBest.Root : minorBest.Root,
-            scoreGap > contour.Count * 0.08);
+            scoreGap > contour.Count * 0.08,
+            confidence);
     }
 
     private static string FormatKeySignature(KeyDetectionResult detection)
@@ -728,7 +822,16 @@ public sealed class PianoTranscriptionService : IPianoTranscriptionService
 
     private sealed record PitchContourPoint(double TimeSeconds, double FrequencyHz);
 
-    private sealed record KeyDetectionResult(string Key, string Mode, int RootPitchClass, bool IsReliable);
+    private sealed record KeyDetectionResult(string Key, string Mode, int RootPitchClass, bool IsReliable, double Confidence);
+
+    private sealed record ResolvedRhythmGrid(
+        double BeatDurationSeconds,
+        int TimeSignatureNumerator,
+        double TempoBpm,
+        double Quantization,
+        string GridSource,
+        double TimeSignatureConfidence,
+        string Summary);
 }
 
 internal static class MusicXmlBuilder
@@ -744,79 +847,102 @@ internal static class MusicXmlBuilder
         IReadOnlyList<GeneratedTrackResult> tracks)
     {
         var measureCount = tracks.SelectMany(track => track.Notes).DefaultIfEmpty().Max(note => note == null ? 1 : note.MeasureNo);
+        var rightTrack = tracks.FirstOrDefault(track => string.Equals(track.HandRole, "right", StringComparison.OrdinalIgnoreCase));
+        var leftTrack = tracks.FirstOrDefault(track => string.Equals(track.HandRole, "left", StringComparison.OrdinalIgnoreCase));
         var builder = new StringBuilder();
         builder.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         builder.AppendLine("<score-partwise version=\"3.1\">");
         builder.AppendLine($"  <work><work-title>{EscapeXml(title)}</work-title></work>");
         builder.AppendLine("  <part-list>");
-        for (var index = 0; index < tracks.Count; index++)
-        {
-            builder.AppendLine($"    <score-part id=\"P{index + 1}\"><part-name>{EscapeXml(tracks[index].Name)}</part-name></score-part>");
-        }
-
+        builder.AppendLine("    <score-part id=\"P1\">");
+        builder.AppendLine("      <part-name>Piano</part-name>");
+        builder.AppendLine("      <part-abbreviation>Pno.</part-abbreviation>");
+        builder.AppendLine("    </score-part>");
         builder.AppendLine("  </part-list>");
-        for (var trackIndex = 0; trackIndex < tracks.Count; trackIndex++)
+        builder.AppendLine("  <part id=\"P1\">");
+        for (var measureNo = 1; measureNo <= measureCount; measureNo++)
         {
-            var track = tracks[trackIndex];
-            builder.AppendLine($"  <part id=\"P{trackIndex + 1}\">");
-            for (var measureNo = 1; measureNo <= measureCount; measureNo++)
+            builder.AppendLine($"    <measure number=\"{measureNo}\">");
+            if (measureNo == 1)
             {
-                builder.AppendLine($"    <measure number=\"{measureNo}\">");
-                if (measureNo == 1)
-                {
-                    builder.AppendLine("      <attributes>");
-                    builder.AppendLine($"        <divisions>{Divisions}</divisions>");
-                    builder.AppendLine($"        <key><fifths>{KeySignatureToFifths(keySignature)}</fifths></key>");
-                    builder.AppendLine($"        <time><beats>{beats}</beats><beat-type>{beatType}</beat-type></time>");
-                    builder.AppendLine("        <clef><sign>G</sign><line>2</line></clef>");
-                    builder.AppendLine("      </attributes>");
-                    builder.AppendLine("      <direction placement=\"above\">");
-                    builder.AppendLine("        <direction-type><metronome><beat-unit>quarter</beat-unit>");
-                    builder.AppendLine($"          <per-minute>{tempoBpm.ToString("0.0", CultureInfo.InvariantCulture)}</per-minute></metronome></direction-type>");
-                    builder.AppendLine("        <sound tempo=\"" + tempoBpm.ToString("0.0", CultureInfo.InvariantCulture) + "\"/>");
-                    builder.AppendLine("      </direction>");
-                }
-
-                var cursor = 0.0;
-                var notes = track.Notes
-                    .Where(note => note.MeasureNo == measureNo)
-                    .OrderBy(note => note.BeatStart)
-                    .ThenBy(note => note.MidiNumber)
-                    .ToList();
-
-                foreach (var note in notes)
-                {
-                    if (note.BeatStart > cursor + 0.001)
-                    {
-                        foreach (var rest in SplitDuration(note.BeatStart - cursor))
-                        {
-                            AppendRest(builder, rest);
-                        }
-                    }
-
-                    AppendNote(builder, note);
-                    cursor = Math.Max(cursor, note.BeatStart + note.DurationBeats);
-                }
-
-                if (cursor < beats - 0.001)
-                {
-                    foreach (var rest in SplitDuration(beats - cursor))
-                    {
-                        AppendRest(builder, rest);
-                    }
-                }
-
-                builder.AppendLine("    </measure>");
+                builder.AppendLine("      <attributes>");
+                builder.AppendLine($"        <divisions>{Divisions}</divisions>");
+                builder.AppendLine($"        <key><fifths>{KeySignatureToFifths(keySignature)}</fifths></key>");
+                builder.AppendLine($"        <time><beats>{beats}</beats><beat-type>{beatType}</beat-type></time>");
+                builder.AppendLine("        <staves>2</staves>");
+                builder.AppendLine("        <clef number=\"1\"><sign>G</sign><line>2</line></clef>");
+                builder.AppendLine("        <clef number=\"2\"><sign>F</sign><line>4</line></clef>");
+                builder.AppendLine("      </attributes>");
+                builder.AppendLine("      <direction placement=\"above\">");
+                builder.AppendLine("        <direction-type><metronome><beat-unit>quarter</beat-unit>");
+                builder.AppendLine($"          <per-minute>{tempoBpm.ToString("0.0", CultureInfo.InvariantCulture)}</per-minute></metronome></direction-type>");
+                builder.AppendLine("        <sound tempo=\"" + tempoBpm.ToString("0.0", CultureInfo.InvariantCulture) + "\"/>");
+                builder.AppendLine("      </direction>");
             }
 
-            builder.AppendLine("  </part>");
+            RenderTrackMeasure(
+                builder,
+                rightTrack?.Notes.Where(note => note.MeasureNo == measureNo).ToList(),
+                beats,
+                voiceNumber: 1,
+                staffNumber: 1);
+
+            builder.AppendLine("      <backup>");
+            builder.AppendLine($"        <duration>{beats * Divisions}</duration>");
+            builder.AppendLine("      </backup>");
+
+            RenderTrackMeasure(
+                builder,
+                leftTrack?.Notes.Where(note => note.MeasureNo == measureNo).ToList(),
+                beats,
+                voiceNumber: 2,
+                staffNumber: 2);
+
+            builder.AppendLine("    </measure>");
         }
 
+        builder.AppendLine("  </part>");
         builder.AppendLine("</score-partwise>");
         return builder.ToString();
     }
 
-    private static void AppendNote(StringBuilder builder, GeneratedNoteResult note)
+    private static void RenderTrackMeasure(
+        StringBuilder builder,
+        IReadOnlyList<GeneratedNoteResult>? notes,
+        int beats,
+        int voiceNumber,
+        int staffNumber)
+    {
+        var orderedNotes = (notes ?? Array.Empty<GeneratedNoteResult>())
+            .OrderBy(note => note.BeatStart)
+            .ThenBy(note => note.MidiNumber)
+            .ToList();
+
+        var cursor = 0.0;
+        foreach (var note in orderedNotes)
+        {
+            if (note.BeatStart > cursor + 0.001)
+            {
+                foreach (var rest in SplitDuration(note.BeatStart - cursor))
+                {
+                    AppendRest(builder, rest, voiceNumber, staffNumber);
+                }
+            }
+
+            AppendNote(builder, note, voiceNumber, staffNumber);
+            cursor = Math.Max(cursor, note.BeatStart + note.DurationBeats);
+        }
+
+        if (cursor < beats - 0.001)
+        {
+            foreach (var rest in SplitDuration(beats - cursor))
+            {
+                AppendRest(builder, rest, voiceNumber, staffNumber);
+            }
+        }
+    }
+
+    private static void AppendNote(StringBuilder builder, GeneratedNoteResult note, int voiceNumber, int staffNumber)
     {
         builder.AppendLine("      <note>");
         AppendPitch(builder, note.PitchName);
@@ -827,11 +953,12 @@ internal static class MusicXmlBuilder
             builder.AppendLine("        <dot/>");
         }
 
-        builder.AppendLine("        <voice>1</voice>");
+        builder.AppendLine($"        <voice>{voiceNumber}</voice>");
+        builder.AppendLine($"        <staff>{staffNumber}</staff>");
         builder.AppendLine("      </note>");
     }
 
-    private static void AppendRest(StringBuilder builder, DurationToken token)
+    private static void AppendRest(StringBuilder builder, DurationToken token, int voiceNumber, int staffNumber)
     {
         builder.AppendLine("      <note>");
         builder.AppendLine("        <rest/>");
@@ -842,6 +969,8 @@ internal static class MusicXmlBuilder
             builder.AppendLine("        <dot/>");
         }
 
+        builder.AppendLine($"        <voice>{voiceNumber}</voice>");
+        builder.AppendLine($"        <staff>{staffNumber}</staff>");
         builder.AppendLine("      </note>");
     }
 

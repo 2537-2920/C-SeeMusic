@@ -23,6 +23,9 @@ public class BeatAnalysisServiceTests
             Assert.InRange(result.TempoBpm, 118.0, 122.0);
             Assert.InRange(result.Stability, 0.85, 1.0);
             Assert.InRange(result.Confidence, 0.45, 1.0);
+            Assert.Equal("detected", result.GridSource);
+            Assert.InRange(result.TimeSignatureNumerator, 2, 4);
+            Assert.InRange(result.TimeSignatureConfidence, 0.0, 1.0);
             Assert.True(result.BeatTimes.Count >= 12);
         }
         finally

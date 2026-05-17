@@ -38,5 +38,7 @@ public sealed class BeatAnalysisResult
     public double Confidence { get; set; }
     public int TimeSignatureNumerator { get; set; } = 4;
     public int TimeSignatureDenominator { get; set; } = 4;
+    public double TimeSignatureConfidence { get; set; }
+    public string GridSource { get; set; } = string.Empty;
     public string Summary { get; set; } = string.Empty;
 }

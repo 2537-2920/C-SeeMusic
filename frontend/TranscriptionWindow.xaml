@@ -413,7 +413,7 @@
 
                         <Border Style="{StaticResource WorkspaceCardStyle}">
                             <StackPanel>
-                                <TextBlock Text="VEROVIO + MUSICXML"
+                                <TextBlock Text="MUSICXML + SVG PREVIEW"
                                            FontSize="14"
                                            FontWeight="Bold"
                                            Foreground="#7A8AA0"/>
@@ -424,7 +424,7 @@
                                            FontWeight="Bold"
                                            Foreground="#1F3F63"/>
                                 <TextBlock x:Name="TxtHeroDescription"
-                                           Text="选择音频并开始识谱后，这里会展示 MusicXML 驱动的双手钢琴谱摘要、页数与浏览说明。"
+                                           Text="选择音频并开始识谱后，这里会展示 MusicXML 结果、分页说明与 SVG 纸面预览。"
                                            Margin="0,16,0,0"
                                            FontSize="15"
                                            Foreground="#6C7B92"
@@ -446,7 +446,7 @@
                                     </Border>
                                     <Border Style="{StaticResource ChipBorderStyle}">
                                         <TextBlock x:Name="TxtHeroViewerChip"
-                                                   Text="全屏查看器支持纸张翻页"
+                                                   Text="支持分页与 PDF 导出"
                                                    FontSize="14"
                                                    FontWeight="SemiBold"
                                                    Foreground="#234062"/>
@@ -478,8 +478,8 @@
                         <Border Style="{StaticResource WorkspaceCardStyle}">
                             <StackPanel>
                                 <TextBlock Text="分析结果" FontSize="15" FontWeight="Bold" Foreground="#7DB9C5"/>
-                                <TextBlock Text="双手钢琴谱分析" Margin="0,10,0,0" FontSize="24" FontWeight="Bold" Foreground="#1F3F63"/>
-                                <TextBlock Text="音轨分离会继续展示左右手轨道、音域范围、音符数量和处理摘要。"
+                                <TextBlock Text="结果轨道构建" Margin="0,10,0,0" FontSize="24" FontWeight="Bold" Foreground="#1F3F63"/>
+                                <TextBlock Text="这里会继续展示提取出的旋律轨道、自动编配的伴奏轨道，以及每条轨道的来源与摘要。"
                                            Margin="0,14,0,0"
                                            FontSize="15"
                                            Foreground="#6C7B92"

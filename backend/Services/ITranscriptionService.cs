@@ -75,9 +75,12 @@ public sealed class PianoTranscriptionResult
     public string Status { get; set; } = "failed";
     public BeatAnalysisResult BeatAnalysis { get; set; } = new();
     public string KeySignature { get; set; } = "C";
+    public double KeyConfidence { get; set; }
     public string MusicXmlContent { get; set; } = string.Empty;
     public int MeasureCount { get; set; }
     public int EstimatedPageCount { get; set; }
+    public string PreviewRenderMode { get; set; } = string.Empty;
+    public string TrackBuildMode { get; set; } = string.Empty;
     public ScoreAnalysisSummaryResponse AnalysisSummary { get; set; } = new();
     public List<GeneratedTrackResult> Tracks { get; set; } = new();
     public List<string> Warnings { get; set; } = new();
@@ -90,6 +93,7 @@ public sealed class GeneratedTrackResult
     public string HandRole { get; set; } = string.Empty;
     public string Instrument { get; set; } = "piano";
     public bool IsGenerated { get; set; }
+    public string Origin { get; set; } = string.Empty;
     public string SummaryText { get; set; } = string.Empty;
     public List<GeneratedNoteResult> Notes { get; set; } = new();
 }

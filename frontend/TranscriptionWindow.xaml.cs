@@ -288,13 +288,13 @@ namespace SeeMusicApp
             _currentPageIndex = 1;
 
             TxtScoreTitle.Text = "双手钢琴谱预览";
-            TxtScoreSubtitle.Text = "当前页面固定展示只读双手钢琴谱，并沿着连续卡片继续展开音轨、结构和分配结果。";
+            TxtScoreSubtitle.Text = "当前页面固定展示只读双手钢琴谱，并沿着连续卡片继续展开轨道构建、结构和双手分配结果。";
             TxtHeroProjectTitle.Text = string.IsNullOrWhiteSpace(score.Title) ? GetProjectDisplayTitle() : score.Title;
-            TxtHeroDescription.Text = "谱面已经切换为 Verovio 渲染，五线谱、连音线、延音线与休止符都由 MusicXML 结果统一驱动。";
+            TxtHeroDescription.Text = BuildHeroDescription(score);
             TxtHeroMeasuresChip.Text = FormatMeasureChip(score.MeasureCount);
             TxtHeroPagesChip.Text = FormatPageChip(GetEstimatedPageCount(score));
-            TxtHeroViewerChip.Text = "全屏查看器支持纸张翻页";
-            TxtPreviewCardHint.Text = "当前页面固定展示带左手伴奏的双手钢琴谱，翻页、预览和 PDF 导出会使用同一份结果。";
+            TxtHeroViewerChip.Text = BuildViewerChip(score.PreviewRenderMode);
+            TxtPreviewCardHint.Text = BuildPreviewHint(score);
 
             TxtTempo.Text = FormatTempo(score.TempoBpm);
             TxtMeter.Text = FormatMeter(score.TimeSignature);
@@ -317,8 +317,8 @@ namespace SeeMusicApp
                 ? score.AnalysisSummary.AssignmentSummary
                 : "暂无双手分配说明。";
 
-            PopulateTrackCards(score.Tracks, "当前结果暂时没有可展示的音轨摘要。");
-            PopulateWarnings(score.Warnings, "当前结果没有额外警告。");
+            PopulateTrackCards(score.Tracks, "当前结果暂时没有可展示的轨道构建摘要。");
+            PopulateWarnings(score.Warnings, "当前结果没有额外提示。", BuildResultInsights(score));
 
             RenderCurrentPage();
         }
@@ -326,11 +326,11 @@ namespace SeeMusicApp
         private void ApplySelectionState()
         {
             TxtScoreTitle.Text = "双手钢琴谱预览";
-            TxtScoreSubtitle.Text = "右侧结果会按连续卡片工作台展开，先看谱面，再继续查看音轨、结构与双手分配。";
+            TxtScoreSubtitle.Text = "右侧结果会按连续卡片工作台展开，先看谱面，再继续查看轨道构建、结构与双手分配。";
             TxtHeroProjectTitle.Text = GetProjectDisplayTitle();
-            TxtHeroDescription.Text = "音频已经准备完成，点击“生成双手钢琴谱”后，工作台会从谱面预览一路串联到音轨、结构和双手分配结果。";
-            TxtHeroViewerChip.Text = "全屏查看器支持纸张翻页";
-            TxtPreviewCardHint.Text = "当前预览区正在等待本次识谱结果，生成完成后会自动切换到 Verovio 谱面浏览。";
+            TxtHeroDescription.Text = "音频已经准备完成，点击“生成双手钢琴谱”后，工作台会从谱面预览一路串联到轨道构建、结构和双手分配结果。";
+            TxtHeroViewerChip.Text = "支持分页与 PDF 导出";
+            TxtPreviewCardHint.Text = "当前预览区正在等待本次识谱结果，生成完成后会自动切换到 SVG 纸面谱面浏览。";
         }
 
         private void ApplyProcessingState(string message, TranscriptionStatusResponse status = null)
@@ -345,7 +345,7 @@ namespace SeeMusicApp
             TxtHeroPagesChip.Text = status != null && status.EstimatedPageCount.HasValue
                 ? FormatPageChip(status.EstimatedPageCount.Value)
                 : "预计 -- 页";
-            TxtHeroViewerChip.Text = "结果返回后支持纸张翻页";
+            TxtHeroViewerChip.Text = "结果返回后支持分页预览";
             TxtPreviewCardHint.Text = "系统正在生成 MusicXML 与 SVG 预览，成功后会直接在这里显示当前谱面。";
 
             TxtTempo.Text = status != null && status.DetectedTempoBpm.HasValue ? FormatTempo(status.DetectedTempoBpm) : "--";
@@ -363,8 +363,8 @@ namespace SeeMusicApp
             TxtAccompanimentSummary.Text = "系统正在整理左手织体和伴奏骨架。";
             TxtAssignmentSummary.Text = "系统正在生成左右手分配与处理说明。";
 
-            PopulateTrackCards(status != null ? status.TrackSummaries : null, "运行音轨分离后，这里会展示左右手轨道、音域和处理摘要。");
-            PopulateWarnings(status != null ? status.Warnings : null, "任务处理中，当前还没有额外提示。");
+            PopulateTrackCards(status != null ? status.TrackSummaries : null, "运行轨道构建后，这里会展示左右手轨道、音域和处理摘要。");
+            PopulateWarnings(status != null ? status.Warnings : null, "任务处理中，当前还没有额外提示。", BuildStatusInsights(status));
         }
 
         private void ApplyFailureState(string errorMessage)
@@ -377,7 +377,7 @@ namespace SeeMusicApp
             TxtPreviewCardHint.Text = "当前没有可展示的谱面预览，请检查音频质量和服务状态后重试。";
             TxtAssignmentSummary.Text = "当前没有可用的双手分配说明。";
 
-            PopulateTrackCards(null, "这次识谱没有成功生成音轨分离结果。");
+            PopulateTrackCards(null, "这次识谱没有成功生成轨道构建结果。");
             PopulateWarnings(new[] { "请检查音频清晰度、时长与后端服务状态后重试。" }, null);
         }
 
@@ -400,16 +400,24 @@ namespace SeeMusicApp
             }
         }
 
-        private void PopulateWarnings(IEnumerable<string> warnings, string emptyMessage)
+        private void PopulateWarnings(IEnumerable<string> warnings, string emptyMessage, IEnumerable<string> insights = null)
         {
             WarningsPanel.Children.Clear();
+            var insightList = insights == null
+                ? new List<string>()
+                : insights.Where(text => !string.IsNullOrWhiteSpace(text)).Take(4).ToList();
             var warningList = warnings == null
                 ? new List<string>()
                 : warnings.Where(warning => !string.IsNullOrWhiteSpace(warning)).Take(4).ToList();
 
+            foreach (var insight in insightList)
+            {
+                WarningsPanel.Children.Add(CreateWarningPill(insight, true));
+            }
+
             if (warningList.Count == 0)
             {
-                if (!string.IsNullOrWhiteSpace(emptyMessage))
+                if (insightList.Count == 0 && !string.IsNullOrWhiteSpace(emptyMessage))
                 {
                     WarningsPanel.Children.Add(CreateWarningPill(emptyMessage, true));
                 }
@@ -463,9 +471,10 @@ namespace SeeMusicApp
             var badges = new WrapPanel();
             badges.Children.Add(CreateMetaPill(FormatHandRole(track.HandRole), "#EEF6FF", "#315A86", "#D2E4F5"));
 
-            if (track.IsGenerated)
+            var trackOriginLabel = FormatTrackOrigin(track.Origin, track.IsGenerated);
+            if (!string.IsNullOrWhiteSpace(trackOriginLabel))
             {
-                badges.Children.Add(CreateMetaPill("AI 整理", "#F8F1FF", "#745B97", "#E4D8F4"));
+                badges.Children.Add(CreateMetaPill(trackOriginLabel, "#F8F1FF", "#745B97", "#E4D8F4"));
             }
 
             content.Children.Add(badges);
@@ -680,12 +689,12 @@ namespace SeeMusicApp
             TxtMeasures.Text = "--";
 
             TxtScoreTitle.Text = "双手钢琴谱预览";
-            TxtScoreSubtitle.Text = "右侧结果会按连续卡片工作台展开，先看谱面，再继续查看音轨、结构与双手分配。";
+            TxtScoreSubtitle.Text = "右侧结果会按连续卡片工作台展开，先看谱面，再继续查看轨道构建、结构与双手分配。";
             TxtHeroProjectTitle.Text = GetProjectDisplayTitle();
-            TxtHeroDescription.Text = "选择音频并开始识谱后，这里会展示 MusicXML 驱动的双手钢琴谱摘要、页数与浏览说明。";
+            TxtHeroDescription.Text = "选择音频并开始识谱后，这里会展示 MusicXML 结果、分页说明与 SVG 纸面预览。";
             TxtHeroMeasuresChip.Text = "共 -- 小节";
             TxtHeroPagesChip.Text = "预计 -- 页";
-            TxtHeroViewerChip.Text = "全屏查看器支持纸张翻页";
+            TxtHeroViewerChip.Text = "支持分页与 PDF 导出";
             TxtPreviewCardHint.Text = "完成一次识谱后，这里会显示只读钢琴谱预览，并和当前页码导航、导出操作保持同步。";
 
             TxtStructureTempo.Text = "--";
@@ -698,7 +707,7 @@ namespace SeeMusicApp
             TxtAccompanimentSummary.Text = "等待识谱结果。";
             TxtAssignmentSummary.Text = "生成后会在这里展示双手分配与处理说明。";
 
-            PopulateTrackCards(null, "运行音轨分离后，这里会展示左右手轨道、音域和处理摘要。");
+            PopulateTrackCards(null, "运行轨道构建后，这里会展示左右手轨道、音域和处理摘要。");
             PopulateWarnings(null, "当前还没有分配提示。");
         }
 
@@ -753,6 +762,168 @@ namespace SeeMusicApp
         private static string FormatPageChip(int pageCount)
         {
             return pageCount > 0 ? string.Format("预计 {0} 页", pageCount) : "预计 -- 页";
+        }
+
+        private static string BuildHeroDescription(ScoreDetailResponse score)
+        {
+            var previewText = string.Equals(score.PreviewRenderMode, "generated_svg_projection", StringComparison.OrdinalIgnoreCase)
+                ? "当前谱面预览采用后端 SVG 纸面投影"
+                : "当前谱面预览已经生成";
+            var keyConfidenceText = score.KeyConfidence.HasValue
+                ? string.Format("，调性识别置信度约 {0}", FormatPercentage(score.KeyConfidence.Value))
+                : string.Empty;
+            return previewText + "，并已同步返回 MusicXML 结果、分页信息与双手轨道摘要" + keyConfidenceText + "。";
+        }
+
+        private static string BuildPreviewHint(ScoreDetailResponse score)
+        {
+            if (string.Equals(score.PreviewRenderMode, "generated_svg_projection", StringComparison.OrdinalIgnoreCase))
+            {
+                return "当前预览采用后端 SVG 纸面投影；MusicXML 结果、分页摘要与 PDF 导出会围绕同一份识谱结果同步更新。";
+            }
+
+            return "当前页面固定展示带左手伴奏的双手钢琴谱，翻页、预览和 PDF 导出会使用同一份结果。";
+        }
+
+        private static string BuildViewerChip(string previewRenderMode)
+        {
+            return string.Equals(previewRenderMode, "generated_svg_projection", StringComparison.OrdinalIgnoreCase)
+                ? "当前预览采用 SVG 纸面投影"
+                : "支持分页与 PDF 导出";
+        }
+
+        private static IEnumerable<string> BuildResultInsights(ScoreDetailResponse score)
+        {
+            var insights = new List<string>();
+            if (!string.IsNullOrWhiteSpace(score.TrackBuildMode))
+            {
+                insights.Add("当前轨道模式：" + FormatTrackBuildMode(score.TrackBuildMode));
+            }
+
+            if (score.AnalysisSummary != null)
+            {
+                if (!string.IsNullOrWhiteSpace(score.AnalysisSummary.TrackBuildSummary))
+                {
+                    insights.Add(score.AnalysisSummary.TrackBuildSummary);
+                }
+
+                if (!string.IsNullOrWhiteSpace(score.AnalysisSummary.RhythmSummary))
+                {
+                    insights.Add(score.AnalysisSummary.RhythmSummary);
+                }
+            }
+
+            if (score.KeyConfidence.HasValue)
+            {
+                insights.Add("调性识别置信度：" + FormatPercentage(score.KeyConfidence.Value));
+            }
+
+            if (score.TimeSignatureConfidence.HasValue)
+            {
+                insights.Add("拍号识别置信度：" + FormatPercentage(score.TimeSignatureConfidence.Value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(score.RhythmGridSource))
+            {
+                insights.Add("节拍网格来源：" + FormatRhythmGridSource(score.RhythmGridSource));
+            }
+
+            return insights;
+        }
+
+        private static IEnumerable<string> BuildStatusInsights(TranscriptionStatusResponse status)
+        {
+            if (status == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var insights = new List<string>();
+            if (!string.IsNullOrWhiteSpace(status.TrackBuildMode))
+            {
+                insights.Add("当前轨道模式：" + FormatTrackBuildMode(status.TrackBuildMode));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status.RhythmGridSource))
+            {
+                insights.Add("当前节拍网格：" + FormatRhythmGridSource(status.RhythmGridSource));
+            }
+
+            if (status.DetectedTimeSignatureConfidence.HasValue)
+            {
+                insights.Add("拍号识别置信度：" + FormatPercentage(status.DetectedTimeSignatureConfidence.Value));
+            }
+
+            return insights;
+        }
+
+        private static string FormatTrackOrigin(string origin, bool isGenerated)
+        {
+            if (string.Equals(origin, "extracted_melody", StringComparison.OrdinalIgnoreCase))
+            {
+                return "旋律提取";
+            }
+
+            if (string.Equals(origin, "arranged_accompaniment", StringComparison.OrdinalIgnoreCase))
+            {
+                return "规则编配";
+            }
+
+            return isGenerated ? "自动生成" : string.Empty;
+        }
+
+        private static string FormatTrackBuildMode(string trackBuildMode)
+        {
+            return string.Equals(trackBuildMode, "melody_extraction_only", StringComparison.OrdinalIgnoreCase)
+                ? "仅旋律提取"
+                : string.Equals(trackBuildMode, "melody_extraction_with_arranged_accompaniment", StringComparison.OrdinalIgnoreCase)
+                    ? "旋律提取 + 左手编配"
+                    : trackBuildMode;
+        }
+
+        private static string FormatRhythmGridSource(string rhythmGridSource)
+        {
+            if (string.Equals(rhythmGridSource, "detected", StringComparison.OrdinalIgnoreCase))
+            {
+                return "检测拍点";
+            }
+
+            if (string.Equals(rhythmGridSource, "pause_estimated", StringComparison.OrdinalIgnoreCase))
+            {
+                return "按旋律停顿估算";
+            }
+
+            if (string.Equals(rhythmGridSource, "default_fallback", StringComparison.OrdinalIgnoreCase))
+            {
+                return "默认 96 BPM / 4/4";
+            }
+
+            if (string.Equals(rhythmGridSource, "disabled", StringComparison.OrdinalIgnoreCase))
+            {
+                return "已关闭节拍识别";
+            }
+
+            return rhythmGridSource;
+        }
+
+        private static string FormatPercentage(double value)
+        {
+            return string.Format("{0:0}%", Clamp01(value) * 100.0);
+        }
+
+        private static double Clamp01(double value)
+        {
+            if (value < 0.0)
+            {
+                return 0.0;
+            }
+
+            if (value > 1.0)
+            {
+                return 1.0;
+            }
+
+            return value;
         }
 
         private static string FormatHandRole(string handRole)

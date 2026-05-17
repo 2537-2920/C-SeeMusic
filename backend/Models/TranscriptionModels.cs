@@ -52,8 +52,11 @@ public sealed class TranscriptionStatusResponse
     public string? ScoreId { get; set; }
     public double? DetectedTempoBpm { get; set; }
     public string? DetectedTimeSignature { get; set; }
+    public double? DetectedTimeSignatureConfidence { get; set; }
     public int? MeasureCount { get; set; }
     public int? EstimatedPageCount { get; set; }
+    public string TrackBuildMode { get; set; } = string.Empty;
+    public string RhythmGridSource { get; set; } = string.Empty;
     public List<ScoreTrackResponse> TrackSummaries { get; set; } = new();
     public List<string> Warnings { get; set; } = new();
 }
@@ -67,9 +70,14 @@ public sealed class ScoreDetailResponse
     public double? TempoBpm { get; set; }
     public string TimeSignature { get; set; } = "4/4";
     public string KeySignature { get; set; } = "C";
+    public double? KeyConfidence { get; set; }
+    public double? TimeSignatureConfidence { get; set; }
     public int MeasureCount { get; set; }
     public int EstimatedPageCount { get; set; }
     public string MusicXmlContent { get; set; } = string.Empty;
+    public string PreviewRenderMode { get; set; } = string.Empty;
+    public string TrackBuildMode { get; set; } = string.Empty;
+    public string RhythmGridSource { get; set; } = string.Empty;
     public List<ScoreTrackResponse> Tracks { get; set; } = new();
     public ScoreAnalysisSummaryResponse AnalysisSummary { get; set; } = new();
     public List<ScorePreviewPageResponse> PreviewPages { get; set; } = new();
@@ -85,6 +93,7 @@ public sealed class ScoreTrackResponse
     public int? RangeLowMidi { get; set; }
     public int? RangeHighMidi { get; set; }
     public bool IsGenerated { get; set; }
+    public string Origin { get; set; } = string.Empty;
     public string SummaryText { get; set; } = string.Empty;
 }
 
@@ -93,6 +102,9 @@ public sealed class ScoreAnalysisSummaryResponse
     public string MelodySummary { get; set; } = string.Empty;
     public string AccompanimentSummary { get; set; } = string.Empty;
     public string AssignmentSummary { get; set; } = string.Empty;
+    public string TrackBuildSummary { get; set; } = string.Empty;
+    public double? KeyConfidence { get; set; }
+    public string RhythmSummary { get; set; } = string.Empty;
 }
 
 public sealed class ScorePreviewPageResponse

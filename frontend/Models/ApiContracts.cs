@@ -32,6 +32,8 @@ namespace SeeMusicApp.Models
         public double Confidence { get; set; }
         public int TimeSignatureNumerator { get; set; }
         public int TimeSignatureDenominator { get; set; }
+        public double TimeSignatureConfidence { get; set; }
+        public string GridSource { get; set; }
         public string Summary { get; set; }
     }
 
@@ -98,8 +100,11 @@ namespace SeeMusicApp.Models
         public string ScoreId { get; set; }
         public double? DetectedTempoBpm { get; set; }
         public string DetectedTimeSignature { get; set; }
+        public double? DetectedTimeSignatureConfidence { get; set; }
         public int? MeasureCount { get; set; }
         public int? EstimatedPageCount { get; set; }
+        public string TrackBuildMode { get; set; }
+        public string RhythmGridSource { get; set; }
         public List<ScoreTrackResponse> TrackSummaries { get; set; }
         public List<string> Warnings { get; set; }
     }
@@ -113,9 +118,14 @@ namespace SeeMusicApp.Models
         public double? TempoBpm { get; set; }
         public string TimeSignature { get; set; }
         public string KeySignature { get; set; }
+        public double? KeyConfidence { get; set; }
+        public double? TimeSignatureConfidence { get; set; }
         public int MeasureCount { get; set; }
         public int EstimatedPageCount { get; set; }
         public string MusicXmlContent { get; set; }
+        public string PreviewRenderMode { get; set; }
+        public string TrackBuildMode { get; set; }
+        public string RhythmGridSource { get; set; }
         public List<ScoreTrackResponse> Tracks { get; set; }
         public ScoreAnalysisSummaryResponse AnalysisSummary { get; set; }
         public List<ScorePreviewPageResponse> PreviewPages { get; set; }
@@ -131,6 +141,7 @@ namespace SeeMusicApp.Models
         public int? RangeLowMidi { get; set; }
         public int? RangeHighMidi { get; set; }
         public bool IsGenerated { get; set; }
+        public string Origin { get; set; }
         public string SummaryText { get; set; }
     }
 
@@ -139,6 +150,9 @@ namespace SeeMusicApp.Models
         public string MelodySummary { get; set; }
         public string AccompanimentSummary { get; set; }
         public string AssignmentSummary { get; set; }
+        public string TrackBuildSummary { get; set; }
+        public double? KeyConfidence { get; set; }
+        public string RhythmSummary { get; set; }
     }
 
     public sealed class ScorePreviewPageResponse
