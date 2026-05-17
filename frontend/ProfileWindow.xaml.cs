@@ -78,12 +78,24 @@ namespace SeeMusicApp
                         UpdateThemeButtonStyle(apiResponse.Data.Theme);
                         UpdateExportFormatCheckboxes(apiResponse.Data.DefaultExportFormats as List<string>);
                     }
+                    else
+                    {
+                        SetDefaultExportFormats();
+                    }
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to load preferences: {ex.Message}");
             }
+        }
+
+        private void SetDefaultExportFormats()
+        {
+            ChkMidi.IsChecked = true;
+            ChkXml.IsChecked = true;
+            ChkPdf.IsChecked = false;
+            ChkPng.IsChecked = false;
         }
 
         private void UpdateExportFormatCheckboxes(List<string> formats)
