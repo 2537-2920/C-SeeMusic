@@ -48,6 +48,32 @@
             <Setter Property="IsEnabled" Value="False"/>
         </Style>
 
+        <Style x:Key="WorkspaceCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#DCE8F4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="28"/>
+            <Setter Property="Padding" Value="26"/>
+            <Setter Property="Margin" Value="0,0,0,18"/>
+        </Style>
+
+        <Style x:Key="InnerCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#FAFCFF"/>
+            <Setter Property="BorderBrush" Value="#DCE7F3"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="Padding" Value="18"/>
+        </Style>
+
+        <Style x:Key="ChipBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="#F7FBFF"/>
+            <Setter Property="BorderBrush" Value="#DCE8F4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="Margin" Value="0,0,12,12"/>
+        </Style>
+
         <Style x:Key="MetricCardStyle" TargetType="Border">
             <Setter Property="Background" Value="#F7FBFF"/>
             <Setter Property="BorderBrush" Value="#DCE7F3"/>
@@ -171,11 +197,7 @@
 
                 <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <Border Background="White"
-                                CornerRadius="28"
-                                Padding="26"
-                                BorderBrush="#DCE8F4"
-                                BorderThickness="1">
+                        <Border Style="{StaticResource WorkspaceCardStyle}">
                             <StackPanel>
                                 <TextBlock Text="识谱准备" FontSize="15" FontWeight="Bold" Foreground="#7DB9C5"/>
                                 <TextBlock Text="基础信息" Margin="0,10,0,24" FontSize="24" FontWeight="Bold" Foreground="#1F3F63"/>
@@ -210,7 +232,7 @@
                                                        Foreground="#617086"
                                                        Text="未选择任何文件"/>
                                         </StackPanel>
-                                        <TextBlock Text="支持 WAV、MP3、M4A、OGG。选择音频后直接点击下方生成钢琴谱即可。"
+                                        <TextBlock Text="支持 WAV、MP3、M4A、OGG。选择音频后直接点击下方“生成双手钢琴谱”即可。"
                                                    Margin="0,16,0,0"
                                                    FontSize="14"
                                                    Foreground="#7B8CA5"
@@ -241,12 +263,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="White"
-                                CornerRadius="28"
-                                Padding="26"
-                                BorderBrush="#DCE8F4"
-                                BorderThickness="1"
-                                Margin="0,20,0,0">
+                        <Border Style="{StaticResource WorkspaceCardStyle}" Margin="0,2,0,0">
                             <StackPanel>
                                 <TextBlock Text="当前状态" FontSize="15" FontWeight="Bold" Foreground="#7DB9C5"/>
                                 <TextBlock Text="乐谱概览" Margin="0,10,0,24" FontSize="24" FontWeight="Bold" Foreground="#1F3F63"/>
@@ -288,156 +305,281 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <Border Grid.Column="2"
-                        Background="White"
-                        CornerRadius="28"
-                        Padding="28"
-                        BorderBrush="#DCE8F4"
-                        BorderThickness="1">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                <ScrollViewer Grid.Column="2"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <Border Style="{StaticResource WorkspaceCardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,24,0">
+                                    <TextBlock Text="识谱结果" FontSize="15" FontWeight="Bold" Foreground="#7DB9C5"/>
+                                    <TextBlock x:Name="TxtScoreTitle"
+                                               Text="双手钢琴谱预览"
+                                               Margin="0,10,0,0"
+                                               FontSize="28"
+                                               FontWeight="Bold"
+                                               Foreground="#1F3F63"/>
+                                    <TextBlock x:Name="TxtScoreSubtitle"
+                                               Text="右侧结果会按连续卡片工作台展开，先看谱面，再继续查看音轨、结构与双手分配。"
+                                               Margin="0,16,0,0"
+                                               FontSize="15"
+                                               Foreground="#6C7B92"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
 
+                                <Border Grid.Row="0"
+                                        Grid.Column="1"
+                                        Background="#F8FBFF"
+                                        BorderBrush="#DCE8F4"
+                                        BorderThickness="1"
+                                        CornerRadius="24"
+                                        Padding="10">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="钢琴"
+                                                Style="{StaticResource PillButtonStyle}"
+                                                Background="#F0F8FF"
+                                                BorderBrush="#C8DDF0"
+                                                FontWeight="Bold"/>
+                                        <Button Content="古筝" Style="{StaticResource DisabledTabStyle}" Margin="10,0,0,0"/>
+                                        <Button Content="吉他" Style="{StaticResource DisabledTabStyle}" Margin="10,0,0,0"/>
+                                        <Button Content="笛子" Style="{StaticResource DisabledTabStyle}" Margin="10,0,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,22,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                            Background="#F8FBFF"
+                                            BorderBrush="#DCE8F4"
+                                            BorderThickness="1"
+                                            CornerRadius="24"
+                                            Padding="10">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button x:Name="BtnPrevPage"
+                                                    Content="&lt;"
+                                                    Width="44"
+                                                    Height="44"
+                                                    Style="{StaticResource PillButtonStyle}"
+                                                    Click="BtnPrevPage_Click"/>
+                                            <Border Background="White"
+                                                    BorderBrush="#DCE8F4"
+                                                    BorderThickness="1"
+                                                    CornerRadius="18"
+                                                    Padding="22,11"
+                                                    Margin="10,0">
+                                                <TextBlock x:Name="TxtPageIndicator"
+                                                           Text="第 1 / 1 页"
+                                                           FontSize="16"
+                                                           FontWeight="Bold"
+                                                           Foreground="#1F3F63"/>
+                                            </Border>
+                                            <Button x:Name="BtnNextPage"
+                                                    Content="&gt;"
+                                                    Width="44"
+                                                    Height="44"
+                                                    Style="{StaticResource PillButtonStyle}"
+                                                    Click="BtnNextPage_Click"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button x:Name="BtnRefreshClear"
+                                                Content="刷新并清空"
+                                                Style="{StaticResource PillButtonStyle}"
+                                                Margin="0,0,14,0"
+                                                Click="BtnRefreshClear_Click"/>
+                                        <Button x:Name="BtnExportPdf"
+                                                Content="导出 PDF"
+                                                Style="{StaticResource PrimaryButtonStyle}"
+                                                Click="BtnExportPdf_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource WorkspaceCardStyle}">
                             <StackPanel>
-                                <TextBlock Text="识谱结果" FontSize="15" FontWeight="Bold" Foreground="#7DB9C5"/>
-                                <TextBlock x:Name="TxtScoreTitle"
-                                           Text="双手钢琴谱预览"
-                                           Margin="0,10,0,0"
-                                           FontSize="28"
+                                <TextBlock Text="VEROVIO + MUSICXML"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="#7A8AA0"/>
+                                <TextBlock x:Name="TxtHeroProjectTitle"
+                                           Text="我的智能识谱项目"
+                                           Margin="0,14,0,0"
+                                           FontSize="24"
                                            FontWeight="Bold"
                                            Foreground="#1F3F63"/>
-                                <TextBlock x:Name="TxtScoreSubtitle"
-                                           Text="当前页面会固定展示只读钢琴谱，并同步展示拍号、速度与双手分配摘要。"
-                                           Margin="0,18,0,0"
+                                <TextBlock x:Name="TxtHeroDescription"
+                                           Text="选择音频并开始识谱后，这里会展示 MusicXML 驱动的双手钢琴谱摘要、页数与浏览说明。"
+                                           Margin="0,16,0,0"
                                            FontSize="15"
                                            Foreground="#6C7B92"
                                            TextWrapping="Wrap"/>
+                                <WrapPanel Margin="0,22,0,0">
+                                    <Border Style="{StaticResource ChipBorderStyle}">
+                                        <TextBlock x:Name="TxtHeroMeasuresChip"
+                                                   Text="共 -- 小节"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#234062"/>
+                                    </Border>
+                                    <Border Style="{StaticResource ChipBorderStyle}">
+                                        <TextBlock x:Name="TxtHeroPagesChip"
+                                                   Text="预计 -- 页"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#234062"/>
+                                    </Border>
+                                    <Border Style="{StaticResource ChipBorderStyle}">
+                                        <TextBlock x:Name="TxtHeroViewerChip"
+                                                   Text="全屏查看器支持纸张翻页"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#234062"/>
+                                    </Border>
+                                </WrapPanel>
                             </StackPanel>
-
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                                <Button Content="钢琴"
-                                        Style="{StaticResource PillButtonStyle}"
-                                        Background="#F0F8FF"
-                                        BorderBrush="#C8DDF0"
-                                        FontWeight="Bold"/>
-                                <Button Content="古筝" Style="{StaticResource DisabledTabStyle}" Margin="10,0,0,0"/>
-                                <Button Content="吉他" Style="{StaticResource DisabledTabStyle}" Margin="10,0,0,0"/>
-                                <Button Content="笛子" Style="{StaticResource DisabledTabStyle}" Margin="10,0,0,0"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <Grid Grid.Row="1" Margin="0,24,0,22">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Button x:Name="BtnPrevPage"
-                                    Grid.Column="0"
-                                    Content="&lt;"
-                                    Width="64"
-                                    Style="{StaticResource PillButtonStyle}"
-                                    Click="BtnPrevPage_Click"/>
-                            <Border Grid.Column="1"
-                                    Background="#F8FBFF"
-                                    BorderBrush="#DCE8F4"
-                                    BorderThickness="1"
-                                    CornerRadius="18"
-                                    Padding="24,12"
-                                    Margin="14,0,0,0">
-                                <TextBlock x:Name="TxtPageIndicator" Text="第 1 / 1 页" FontSize="16" FontWeight="Bold" Foreground="#1F3F63"/>
-                            </Border>
-                            <Button x:Name="BtnNextPage"
-                                    Grid.Column="2"
-                                    Content="&gt;"
-                                    Width="64"
-                                    Style="{StaticResource PillButtonStyle}"
-                                    Margin="14,0,0,0"
-                                    Click="BtnNextPage_Click"/>
-                            <Button x:Name="BtnRefreshClear"
-                                    Grid.Column="4"
-                                    Content="刷新并清空"
-                                    Style="{StaticResource PillButtonStyle}"
-                                    Margin="0,0,14,0"
-                                    Click="BtnRefreshClear_Click"/>
-                            <Button x:Name="BtnExportPdf"
-                                    Grid.Column="5"
-                                    Content="导出 PDF"
-                                    Style="{StaticResource PrimaryButtonStyle}"
-                                    Click="BtnExportPdf_Click"/>
-                        </Grid>
-
-                        <Border Grid.Row="2"
-                                Background="#FCFEFF"
-                                BorderBrush="#DCE8F4"
-                                BorderThickness="1"
-                                CornerRadius="28"
-                                Padding="18">
-                            <WebBrowser x:Name="ScorePreviewBrowser"/>
                         </Border>
 
-                        <Border Grid.Row="3"
-                                Background="#F8FBFF"
-                                BorderBrush="#DCE8F4"
-                                BorderThickness="1"
-                                CornerRadius="24"
-                                Padding="24"
-                                Margin="0,22,0,0">
+                        <Border Style="{StaticResource WorkspaceCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="乐谱预览" FontSize="22" FontWeight="Bold" Foreground="#1F3F63"/>
+                                <TextBlock x:Name="TxtPreviewCardHint"
+                                           Text="完成一次识谱后，这里会显示只读钢琴谱预览，并和当前页码导航、导出操作保持同步。"
+                                           Margin="0,14,0,0"
+                                           FontSize="15"
+                                           Foreground="#6C7B92"
+                                           TextWrapping="Wrap"/>
+                                <Border Background="#FCFEFF"
+                                        BorderBrush="#DCE8F4"
+                                        BorderThickness="1"
+                                        CornerRadius="24"
+                                        Padding="18"
+                                        Margin="0,20,0,0">
+                                    <WebBrowser x:Name="ScorePreviewBrowser" Height="860"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource WorkspaceCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="分析结果" FontSize="15" FontWeight="Bold" Foreground="#7DB9C5"/>
+                                <TextBlock Text="双手钢琴谱分析" Margin="0,10,0,0" FontSize="24" FontWeight="Bold" Foreground="#1F3F63"/>
+                                <TextBlock Text="音轨分离会继续展示左右手轨道、音域范围、音符数量和处理摘要。"
+                                           Margin="0,14,0,0"
+                                           FontSize="15"
+                                           Foreground="#6C7B92"
+                                           TextWrapping="Wrap"/>
+                                <WrapPanel x:Name="TracksPanel" Margin="0,20,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource WorkspaceCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="节拍与结构" FontSize="22" FontWeight="Bold" Foreground="#1F3F63"/>
+                                <TextBlock Text="当前乐谱的速度、拍号、调号、小节数和分页信息会沿着工作台继续同步更新。"
+                                           Margin="0,14,0,0"
+                                           FontSize="15"
+                                           Foreground="#6C7B92"
+                                           TextWrapping="Wrap"/>
+
+                                <UniformGrid Columns="5" Margin="0,20,0,0">
+                                    <Border Style="{StaticResource InnerCardStyle}" Margin="0,0,12,0">
+                                        <StackPanel>
+                                            <TextBlock Text="速度" FontSize="14" Foreground="#7A8AA0"/>
+                                            <TextBlock x:Name="TxtStructureTempo" Text="--" Margin="0,14,0,0" FontSize="24" FontWeight="Bold" Foreground="#1E3C62"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource InnerCardStyle}" Margin="0,0,12,0">
+                                        <StackPanel>
+                                            <TextBlock Text="拍号" FontSize="14" Foreground="#7A8AA0"/>
+                                            <TextBlock x:Name="TxtStructureMeter" Text="--/--" Margin="0,14,0,0" FontSize="24" FontWeight="Bold" Foreground="#1E3C62"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource InnerCardStyle}" Margin="0,0,12,0">
+                                        <StackPanel>
+                                            <TextBlock Text="调号" FontSize="14" Foreground="#7A8AA0"/>
+                                            <TextBlock x:Name="TxtStructureKey" Text="--" Margin="0,14,0,0" FontSize="24" FontWeight="Bold" Foreground="#1E3C62"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource InnerCardStyle}" Margin="0,0,12,0">
+                                        <StackPanel>
+                                            <TextBlock Text="小节数" FontSize="14" Foreground="#7A8AA0"/>
+                                            <TextBlock x:Name="TxtStructureMeasures" Text="--" Margin="0,14,0,0" FontSize="24" FontWeight="Bold" Foreground="#1E3C62"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource InnerCardStyle}">
+                                        <StackPanel>
+                                            <TextBlock Text="页数" FontSize="14" Foreground="#7A8AA0"/>
+                                            <TextBlock x:Name="TxtStructurePages" Text="--" Margin="0,14,0,0" FontSize="24" FontWeight="Bold" Foreground="#1E3C62"/>
+                                        </StackPanel>
+                                    </Border>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource WorkspaceCardStyle}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <StackPanel Margin="0,0,18,0">
-                                    <TextBlock Text="右手旋律摘要" FontSize="16" FontWeight="Bold" Foreground="#213B63"/>
-                                    <TextBlock x:Name="TxtMelodySummary"
-                                               Margin="0,14,0,0"
-                                               FontSize="14"
-                                               Foreground="#6C7B92"
-                                               TextWrapping="Wrap"
-                                               Text="等待识谱结果。"/>
-                                </StackPanel>
+                                <Border Grid.Column="0" Style="{StaticResource InnerCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="右手旋律摘要" FontSize="18" FontWeight="Bold" Foreground="#213B63"/>
+                                        <TextBlock x:Name="TxtMelodySummary"
+                                                   Margin="0,16,0,0"
+                                                   FontSize="14"
+                                                   Foreground="#6C7B92"
+                                                   TextWrapping="Wrap"
+                                                   Text="等待识谱结果。"/>
+                                    </StackPanel>
+                                </Border>
 
-                                <StackPanel Grid.Column="1" Margin="18,0">
-                                    <TextBlock Text="左手伴奏摘要" FontSize="16" FontWeight="Bold" Foreground="#213B63"/>
-                                    <TextBlock x:Name="TxtAccompanimentSummary"
-                                               Margin="0,14,0,0"
-                                               FontSize="14"
-                                               Foreground="#6C7B92"
-                                               TextWrapping="Wrap"
-                                               Text="等待识谱结果。"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2" Margin="18,0,0,0">
-                                    <TextBlock Text="分配与提示" FontSize="16" FontWeight="Bold" Foreground="#213B63"/>
-                                    <TextBlock x:Name="TxtAssignmentSummary"
-                                               Margin="0,14,0,0"
-                                               FontSize="14"
-                                               Foreground="#6C7B92"
-                                               TextWrapping="Wrap"
-                                               Text="生成后会在这里展示双手分配与处理说明。"/>
-                                    <StackPanel x:Name="WarningsPanel" Margin="0,14,0,0"/>
-                                </StackPanel>
+                                <Border Grid.Column="2" Style="{StaticResource InnerCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="左手伴奏摘要" FontSize="18" FontWeight="Bold" Foreground="#213B63"/>
+                                        <TextBlock x:Name="TxtAccompanimentSummary"
+                                                   Margin="0,16,0,0"
+                                                   FontSize="14"
+                                                   Foreground="#6C7B92"
+                                                   TextWrapping="Wrap"
+                                                   Text="等待识谱结果。"/>
+                                    </StackPanel>
+                                </Border>
                             </Grid>
                         </Border>
-                    </Grid>
-                </Border>
+
+                        <Border Style="{StaticResource WorkspaceCardStyle}" Margin="0,0,0,4">
+                            <StackPanel>
+                                <TextBlock Text="双手分配与提示" FontSize="22" FontWeight="Bold" Foreground="#1F3F63"/>
+                                <TextBlock x:Name="TxtAssignmentSummary"
+                                           Margin="0,14,0,0"
+                                           FontSize="15"
+                                           Foreground="#6C7B92"
+                                           TextWrapping="Wrap"
+                                           Text="生成后会在这里展示双手分配与处理说明。"/>
+                                <WrapPanel x:Name="WarningsPanel" Margin="0,20,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
 
             <Border Grid.Row="2"

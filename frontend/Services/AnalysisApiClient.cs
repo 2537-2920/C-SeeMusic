@@ -88,7 +88,7 @@ namespace SeeMusicApp.Services
             return payload.Data;
         }
 
-        public async Task<EvaluationWorkflowResult> SubmitEvaluationAsync(
+        public async Task<EvaluationReportResponse> SubmitEvaluationAsync(
             string performanceFilePath,
             string referenceFilePath,
             bool analyzePitch,
@@ -107,7 +107,7 @@ namespace SeeMusicApp.Services
             });
         }
 
-        public async Task<EvaluationWorkflowResult> SubmitSingingEvaluationAsync(SingingEvaluationRequest request)
+        public async Task<EvaluationReportResponse> SubmitSingingEvaluationAsync(SingingEvaluationRequest request)
         {
             if (request == null
                 || string.IsNullOrWhiteSpace(request.PerformanceFilePath)
@@ -122,83 +122,52 @@ namespace SeeMusicApp.Services
                 throw new InvalidOperationException("请先选择可用的标准音频文件。");
             }
 
-            var submit = await SubmitSingingEvaluationRequestAsync(request);
-
-            var status = new EvaluationStatusResponse
-            {
-                EvaluationId = submit.EvaluationId,
-                Status = submit.Status,
-                Progress = submit.Progress,
-                Warnings = submit.Warnings ?? new System.Collections.Generic.List<string>()
-            };
-
-            if (submit.ReportPreview != null && string.Equals(submit.Status, "succeeded", StringComparison.OrdinalIgnoreCase))
-            {
-                return new EvaluationWorkflowResult
-                {
-                    Submit = submit,
-                    Status = status,
-                    Report = submit.ReportPreview
-                };
-            }
-
-            for (var attempt = 0; attempt < 20; attempt++)
-            {
-                if (string.Equals(status.Status, "succeeded", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(status.Status, "failed", StringComparison.OrdinalIgnoreCase))
-                {
-                    break;
-                }
-
-                await Task.Delay(TimeSpan.FromSeconds(1.5));
-                status = await GetSingingEvaluationStatusAsync(submit.EvaluationId, submit.AnonymousAccessToken);
-            }
-
-            if (string.Equals(status.Status, "failed", StringComparison.OrdinalIgnoreCase))
-            {
-                var message = !string.IsNullOrWhiteSpace(status.ErrorMessage)
-                    ? status.ErrorMessage
-                    : (status.Warnings != null && status.Warnings.Count > 0 ? status.Warnings[0] : "评估失败。");
-                throw new InvalidOperationException(message);
-            }
-
-            if (!string.Equals(status.Status, "succeeded", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("评估任务仍在处理中，请稍后重试。");
-            }
-
-            var report = await GetSingingEvaluationReportAsync(submit.EvaluationId, submit.AnonymousAccessToken);
-            return new EvaluationWorkflowResult
-            {
-                Submit = submit,
-                Status = status,
-                Report = report
-            };
+            return await SubmitSingingEvaluationRequestAsync(request);
         }
 
         public async Task<TransposeSuggestionResponse> GetTransposeSuggestionAsync(
-            string evaluationId,
-            string anonymousAccessToken,
+            TransposeBase transposeBase,
+            string feedbackLanguage,
             string sourceGender,
             string targetGender)
         {
             var json = _serializer.Serialize(new TransposeSuggestionRequest
             {
+                TransposeBase = transposeBase,
+                FeedbackLanguage = string.IsNullOrWhiteSpace(feedbackLanguage) ? "zh-CN" : feedbackLanguage,
                 SourceGender = sourceGender,
                 TargetGender = targetGender
             });
 
-            var url = BuildUrl("/api/v1/singing/evaluate/" + Uri.EscapeDataString(evaluationId) + "/transpose-suggestion");
-            if (!string.IsNullOrWhiteSpace(anonymousAccessToken))
+            using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
-                url += "?accessToken=" + Uri.EscapeDataString(anonymousAccessToken);
+                var response = await HttpClient.PostAsync(BuildUrl("/api/v1/singing/evaluate/transpose-suggestion"), content);
+                var payload = await ReadApiResponseAsync<TransposeSuggestionResponse>(response);
+                return payload.Data;
             }
+        }
+
+        public async Task<byte[]> ExportSingingEvaluationPdfAsync(EvaluationReportResponse report)
+        {
+            if (report == null || report.Summary == null)
+            {
+                throw new InvalidOperationException("当前没有可导出的评估报告。");
+            }
+
+            var json = _serializer.Serialize(new EvaluationPdfExportRequest
+            {
+                Report = report
+            });
 
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
-                var response = await HttpClient.PostAsync(url, content);
-                var payload = await ReadApiResponseAsync<TransposeSuggestionResponse>(response);
-                return payload.Data;
+                var response = await HttpClient.PostAsync(BuildUrl("/api/v1/singing/evaluate/export-pdf"), content);
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new InvalidOperationException(await ReadErrorMessageAsync(response));
+                }
+
+                return await response.Content.ReadAsByteArrayAsync();
             }
         }
 
@@ -245,7 +214,7 @@ namespace SeeMusicApp.Services
             }
         }
 
-        private async Task<EvaluationSubmitResponse> SubmitSingingEvaluationRequestAsync(SingingEvaluationRequest request)
+        private async Task<EvaluationReportResponse> SubmitSingingEvaluationRequestAsync(SingingEvaluationRequest request)
         {
             using (var form = new MultipartFormDataContent())
             using (var performanceStream = File.OpenRead(request.PerformanceFilePath))
@@ -270,7 +239,7 @@ namespace SeeMusicApp.Services
                     form.Add(referenceContent, "referenceFile", Path.GetFileName(request.ReferenceFilePath));
 
                     var response = await HttpClient.PostAsync(BuildUrl("/api/v1/singing/evaluate"), form);
-                    var payload = await ReadApiResponseAsync<EvaluationSubmitResponse>(response);
+                    var payload = await ReadApiResponseAsync<EvaluationReportResponse>(response);
                     return payload.Data;
                 }
                 finally
@@ -286,32 +255,6 @@ namespace SeeMusicApp.Services
                     }
                 }
             }
-        }
-
-        private async Task<EvaluationStatusResponse> GetSingingEvaluationStatusAsync(string evaluationId, string accessToken)
-        {
-            var url = BuildUrl("/api/v1/singing/evaluate/" + Uri.EscapeDataString(evaluationId));
-            if (!string.IsNullOrWhiteSpace(accessToken))
-            {
-                url += "?accessToken=" + Uri.EscapeDataString(accessToken);
-            }
-
-            var response = await HttpClient.GetAsync(url);
-            var payload = await ReadApiResponseAsync<EvaluationStatusResponse>(response);
-            return payload.Data;
-        }
-
-        private async Task<EvaluationReportResponse> GetSingingEvaluationReportAsync(string evaluationId, string accessToken)
-        {
-            var url = BuildUrl("/api/v1/singing/evaluate/" + Uri.EscapeDataString(evaluationId) + "/report");
-            if (!string.IsNullOrWhiteSpace(accessToken))
-            {
-                url += "?accessToken=" + Uri.EscapeDataString(accessToken);
-            }
-
-            var response = await HttpClient.GetAsync(url);
-            var payload = await ReadApiResponseAsync<EvaluationReportResponse>(response);
-            return payload.Data;
         }
 
         private async Task<ApiResponse<T>> ReadApiResponseAsync<T>(HttpResponseMessage response)
@@ -338,6 +281,27 @@ namespace SeeMusicApp.Services
             }
 
             return payload;
+        }
+
+        private async Task<string> ReadErrorMessageAsync(HttpResponseMessage response)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            if (!string.IsNullOrWhiteSpace(body))
+            {
+                try
+                {
+                    var payload = _serializer.Deserialize<ApiResponse<object>>(body);
+                    if (payload != null && !string.IsNullOrWhiteSpace(payload.Message))
+                    {
+                        return payload.Message;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            return string.Format("请求失败，HTTP {0}", (int)response.StatusCode);
         }
 
         private string BuildUrl(string relativePath)

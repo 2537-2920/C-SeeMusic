@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using backend.Models;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -10,16 +9,23 @@ namespace backend.Controllers;
 [Route("api/v1/singing/evaluate")]
 public class SingingEvaluationController : ControllerBase
 {
-    private readonly IEvaluationService _evaluationService;
+    private readonly IInstantSingingEvaluationService _instantSingingEvaluationService;
+    private readonly ITransposeSuggestionService _transposeSuggestionService;
+    private readonly IPdfExportService _pdfExportService;
 
-    public SingingEvaluationController(IEvaluationService evaluationService)
+    public SingingEvaluationController(
+        IInstantSingingEvaluationService instantSingingEvaluationService,
+        ITransposeSuggestionService transposeSuggestionService,
+        IPdfExportService pdfExportService)
     {
-        _evaluationService = evaluationService;
+        _instantSingingEvaluationService = instantSingingEvaluationService;
+        _transposeSuggestionService = transposeSuggestionService;
+        _pdfExportService = pdfExportService;
     }
 
     [HttpPost]
     [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<EvaluationSubmitResponse>>> Submit(
+    public async Task<ActionResult<ApiResponse<EvaluationReportResponse>>> Submit(
         [FromForm] IFormFile performanceFile,
         [FromForm] IFormFile? referenceFile,
         [FromForm] string userAudioType = "with_accompaniment",
@@ -32,17 +38,17 @@ public class SingingEvaluationController : ControllerBase
     {
         if (performanceFile == null || performanceFile.Length == 0)
         {
-            return BadRequest(new ApiResponse<EvaluationSubmitResponse> { Code = 40001, Message = "performanceFile required" });
+            return BadRequest(new ApiResponse<EvaluationReportResponse> { Code = 40001, Message = "performanceFile required" });
         }
 
         if (referenceFile == null || referenceFile.Length == 0)
         {
-            return BadRequest(new ApiResponse<EvaluationSubmitResponse> { Code = 40001, Message = "referenceFile required" });
+            return BadRequest(new ApiResponse<EvaluationReportResponse> { Code = 40001, Message = "referenceFile required" });
         }
 
         try
         {
-            var response = await _evaluationService.SubmitAsync(
+            var response = await _instantSingingEvaluationService.EvaluateAsync(
                 performanceFile,
                 referenceFile,
                 new EvaluationOptionsRequest
@@ -54,53 +60,8 @@ public class SingingEvaluationController : ControllerBase
                     ScoringModel = scoringModel,
                     RhythmThresholdMs = rhythmThresholdMs,
                 },
-                TryGetCurrentUserId(),
                 cancellationToken);
 
-            return Ok(new ApiResponse<EvaluationSubmitResponse> { Data = response });
-        }
-        catch (Exception exception)
-        {
-            return BuildErrorResponse<EvaluationSubmitResponse>(exception);
-        }
-    }
-
-    [HttpGet("{evaluationId}")]
-    [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<EvaluationStatusResponse>>> GetStatus(
-        string evaluationId,
-        [FromQuery] string? accessToken,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var response = await _evaluationService.GetStatusAsync(
-                evaluationId,
-                TryGetCurrentUserId(),
-                accessToken,
-                cancellationToken);
-            return Ok(new ApiResponse<EvaluationStatusResponse> { Data = response });
-        }
-        catch (Exception exception)
-        {
-            return BuildErrorResponse<EvaluationStatusResponse>(exception);
-        }
-    }
-
-    [HttpGet("{evaluationId}/report")]
-    [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<EvaluationReportResponse>>> GetReport(
-        string evaluationId,
-        [FromQuery] string? accessToken,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var response = await _evaluationService.GetReportAsync(
-                evaluationId,
-                TryGetCurrentUserId(),
-                accessToken,
-                cancellationToken);
             return Ok(new ApiResponse<EvaluationReportResponse> { Data = response });
         }
         catch (Exception exception)
@@ -109,22 +70,19 @@ public class SingingEvaluationController : ControllerBase
         }
     }
 
-    [HttpPost("{evaluationId}/transpose-suggestion")]
+    [HttpPost("transpose-suggestion")]
     [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<TransposeSuggestionResponse>>> GetTransposeSuggestion(
-        string evaluationId,
-        [FromBody] TransposeSuggestionRequest request,
-        [FromQuery] string? accessToken,
-        CancellationToken cancellationToken = default)
+    public ActionResult<ApiResponse<TransposeSuggestionResponse>> GetTransposeSuggestion(
+        [FromBody] TransposeSuggestionRequest request)
     {
+        if (request?.TransposeBase == null)
+        {
+            return BadRequest(new ApiResponse<TransposeSuggestionResponse> { Code = 40001, Message = "transposeBase required" });
+        }
+
         try
         {
-            var response = await _evaluationService.GetTransposeSuggestionAsync(
-                evaluationId,
-                TryGetCurrentUserId(),
-                accessToken,
-                request ?? new TransposeSuggestionRequest(),
-                cancellationToken);
+            var response = _transposeSuggestionService.Build(request);
             return Ok(new ApiResponse<TransposeSuggestionResponse> { Data = response });
         }
         catch (Exception exception)
@@ -133,59 +91,48 @@ public class SingingEvaluationController : ControllerBase
         }
     }
 
-    [HttpPost("{evaluationId}/exports")]
-    [Authorize]
-    public async Task<ActionResult<ApiResponse<EvaluationExportResponse>>> Export(
-        string evaluationId,
-        [FromBody] ExportEvaluationRequest request,
-        CancellationToken cancellationToken = default)
+    [HttpPost("export-pdf")]
+    [AllowAnonymous]
+    public IActionResult ExportPdf([FromBody] EvaluationPdfExportRequest request)
     {
+        if (request?.Report?.Summary == null)
+        {
+            return BadRequest(new ApiResponse<object> { Code = 40001, Message = "report required" });
+        }
+
         try
         {
-            var response = await _evaluationService.ExportAsync(
-                evaluationId,
-                GetCurrentUserId(),
-                request.Format,
-                cancellationToken);
-            return Ok(new ApiResponse<EvaluationExportResponse> { Data = response });
+            var bytes = _pdfExportService.Export(request.Report);
+            var fileName = string.IsNullOrWhiteSpace(request.Report.Summary.AnalysisId)
+                ? "singing-evaluation-report.pdf"
+                : $"singing-evaluation-{request.Report.Summary.AnalysisId}.pdf";
+            return File(bytes, "application/pdf", fileName);
         }
         catch (Exception exception)
         {
-            return BuildErrorResponse<EvaluationExportResponse>(exception);
+            return BuildFileActionErrorResponse(exception);
         }
-    }
-
-    private int GetCurrentUserId()
-    {
-        var userId = TryGetCurrentUserId();
-        if (!userId.HasValue)
-        {
-            throw new UnauthorizedAccessException("缺少有效登录态。");
-        }
-
-        return userId.Value;
-    }
-
-    private int? TryGetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-        {
-            return null;
-        }
-
-        return userId;
     }
 
     private ActionResult<ApiResponse<T>> BuildErrorResponse<T>(Exception exception)
     {
         return exception switch
         {
-            UnauthorizedAccessException => StatusCode(403, new ApiResponse<T> { Code = 40301, Message = exception.Message }),
             InvalidOperationException when exception.Message.Contains("未找到", StringComparison.OrdinalIgnoreCase) =>
                 NotFound(new ApiResponse<T> { Code = 40404, Message = exception.Message }),
             InvalidOperationException => BadRequest(new ApiResponse<T> { Code = 40001, Message = exception.Message }),
             _ => StatusCode(500, new ApiResponse<T> { Code = 50000, Message = exception.Message })
+        };
+    }
+
+    private IActionResult BuildFileActionErrorResponse(Exception exception)
+    {
+        return exception switch
+        {
+            InvalidOperationException when exception.Message.Contains("未找到", StringComparison.OrdinalIgnoreCase) =>
+                NotFound(new ApiResponse<object> { Code = 40404, Message = exception.Message }),
+            InvalidOperationException => BadRequest(new ApiResponse<object> { Code = 40001, Message = exception.Message }),
+            _ => StatusCode(500, new ApiResponse<object> { Code = 50000, Message = exception.Message })
         };
     }
 }

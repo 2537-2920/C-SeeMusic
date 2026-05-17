@@ -28,12 +28,15 @@ var jwtSettings = new JwtSettings
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton<JwtTokenProvider>();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var databaseEnabled = IsDatabaseEnabled(connectionString);
 
-builder.Services.AddDbContext<SeeMusicDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
-);
+if (databaseEnabled)
+{
+    builder.Services.AddDbContext<SeeMusicDbContext>(options =>
+        options.UseMySql(connectionString!, ServerVersion.AutoDetect(connectionString!))
+    );
+}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -62,12 +65,18 @@ builder.Services.Configure<EvaluationProcessingOptions>(
     builder.Configuration.GetSection("EvaluationProcessing"));
 builder.Services.Configure<TranscriptionProcessingOptions>(
     builder.Configuration.GetSection("TranscriptionProcessing"));
-builder.Services.AddApplicationServices();
+builder.Services.AddCoreApplicationServices();
+
+if (databaseEnabled)
+{
+    builder.Services.AddDatabaseBackedApplicationServices();
+}
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+if (databaseEnabled)
 {
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<SeeMusicDbContext>();
     if (context.Database.GetMigrations().Any())
     {
@@ -98,3 +107,9 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static bool IsDatabaseEnabled(string? connectionString)
+{
+    return !string.IsNullOrWhiteSpace(connectionString)
+        && !connectionString.Contains("CHANGE_ME", StringComparison.OrdinalIgnoreCase);
+}

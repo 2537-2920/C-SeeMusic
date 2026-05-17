@@ -5,17 +5,26 @@ namespace backend.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddCoreApplicationServices(this IServiceCollection services)
+    {
+        services.AddScoped<IBeatAnalysisService, BeatAnalysisService>();
+        services.AddScoped<IPitchAnalysisService, PitchAnalysisService>();
+        services.AddScoped<IRhythmEvaluationService, RhythmEvaluationService>();
+        services.AddScoped<IEvaluationScoringService, EvaluationScoringService>();
+        services.AddScoped<ITemporaryAudioPreparationService, TemporaryAudioPreparationService>();
+        services.AddScoped<IInstantSingingEvaluationService, InstantSingingEvaluationService>();
+        services.AddScoped<ITransposeSuggestionService, InstantTransposeSuggestionService>();
+        services.AddScoped<IPdfExportService, PdfExportService>();
+        return services;
+    }
+
+    public static IServiceCollection AddDatabaseBackedApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IMediaService, MediaService>();
-        services.AddScoped<IBeatAnalysisService, BeatAnalysisService>();
         services.AddScoped<IAudioPreparationService, AudioPreparationService>();
-        services.AddScoped<IPitchAnalysisService, PitchAnalysisService>();
         services.AddScoped<IPianoTranscriptionService, PianoTranscriptionService>();
         services.AddScoped<ITranscriptionService, TranscriptionService>();
-        services.AddScoped<IRhythmEvaluationService, RhythmEvaluationService>();
-        services.AddScoped<IEvaluationScoringService, EvaluationScoringService>();
         services.AddScoped<IEvaluationService, EvaluationService>();
         services.AddSingleton<ITranscriptionTaskQueue, TranscriptionTaskQueue>();
         services.AddSingleton<IEvaluationTaskQueue, EvaluationTaskQueue>();

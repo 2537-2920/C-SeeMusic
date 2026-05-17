@@ -2,6 +2,7 @@
 using SeeMusicApp.Models;
 using SeeMusicApp.Services;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -20,6 +21,7 @@ namespace SeeMusicApp
         private ScoreDetailResponse _currentScore;
         private int _currentPageIndex = 1;
         private bool _isServiceAvailable = true;
+        private bool _isBusy;
 
         public TranscriptionWindow()
         {
@@ -73,6 +75,8 @@ namespace SeeMusicApp
                 {
                     TxtProjectTitle.Text = System.IO.Path.GetFileNameWithoutExtension(_selectedAudioPath);
                 }
+
+                ApplySelectionState();
             }
         }
 
@@ -94,16 +98,15 @@ namespace SeeMusicApp
             ClearScoreOnly();
             TranscriptionProgressBar.Value = 8;
             TxtTranscriptionStatus.Text = "正在上传音频并创建识谱任务...";
-            TxtFooterStatus.Text = "识谱任务已开始，正在与后端同步处理进度。";
+            TxtFooterStatus.Text = "识谱任务已开始，工作台会沿着连续卡片同步刷新处理进度。";
+            ApplyProcessingState(TxtTranscriptionStatus.Text);
 
             try
             {
                 var upload = await _analysisApiClient.UploadAudioAsync(_selectedAudioPath);
                 TranscriptionProgressBar.Value = 18;
 
-                var title = string.IsNullOrWhiteSpace(TxtProjectTitle.Text)
-                    ? "我的智能识谱项目"
-                    : TxtProjectTitle.Text.Trim();
+                var title = GetProjectDisplayTitle();
                 var createResponse = await _analysisApiClient.CreatePianoTranscriptionAsync(upload.MediaId, title);
                 var status = new TranscriptionStatusResponse
                 {
@@ -111,7 +114,7 @@ namespace SeeMusicApp
                     Status = createResponse.Status,
                     Progress = createResponse.Progress,
                     ScoreId = createResponse.ScoreId,
-                    Warnings = new System.Collections.Generic.List<string>()
+                    Warnings = new List<string>()
                 };
 
                 UpdateStatusFromJob(status, createResponse.Message);
@@ -152,6 +155,7 @@ namespace SeeMusicApp
             {
                 TxtTranscriptionStatus.Text = "识谱失败：" + exception.Message;
                 TxtFooterStatus.Text = "识谱失败，请检查文件格式或服务状态后重试。";
+                ApplyFailureState(exception.Message);
                 MessageBox.Show(exception.Message, "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             finally
@@ -220,15 +224,8 @@ namespace SeeMusicApp
 
         private void SetBusy(bool isBusy)
         {
-            BtnGenerateScore.IsEnabled = !isBusy && _isServiceAvailable;
-            BtnChooseAudio.IsEnabled = !isBusy;
-            BtnRefreshClear.IsEnabled = !isBusy;
-            BtnPrevPage.IsEnabled = !isBusy && _currentScore != null && _currentPageIndex > 1;
-            BtnNextPage.IsEnabled = !isBusy
-                && _currentScore != null
-                && _currentScore.PreviewPages != null
-                && _currentPageIndex < _currentScore.PreviewPages.Count;
-            BtnExportPdf.IsEnabled = !isBusy && _currentScore != null && _currentScore.PreviewPages != null && _currentScore.PreviewPages.Count > 0;
+            _isBusy = isBusy;
+            UpdateActionStates();
         }
 
         private void SetHealthState(bool isAvailable)
@@ -242,14 +239,29 @@ namespace SeeMusicApp
 
             if (!isAvailable)
             {
-                BtnGenerateScore.IsEnabled = false;
                 TxtFooterStatus.Text = "后端服务当前不可用，请先启动服务后再开始识谱。";
             }
-            else if (_currentScore == null)
+            else if (_currentScore == null && !_isBusy)
             {
-                BtnGenerateScore.IsEnabled = true;
                 TxtFooterStatus.Text = "服务连接正常，现在可以开始识谱和预览。";
             }
+
+            UpdateActionStates();
+        }
+
+        private void UpdateActionStates()
+        {
+            BtnGenerateScore.IsEnabled = !_isBusy && _isServiceAvailable;
+            BtnChooseAudio.IsEnabled = !_isBusy;
+            BtnRefreshClear.IsEnabled = !_isBusy;
+
+            var hasPreview = _currentScore != null
+                && _currentScore.PreviewPages != null
+                && _currentScore.PreviewPages.Count > 0;
+
+            BtnPrevPage.IsEnabled = !_isBusy && hasPreview && _currentPageIndex > 1;
+            BtnNextPage.IsEnabled = !_isBusy && hasPreview && _currentPageIndex < _currentScore.PreviewPages.Count;
+            BtnExportPdf.IsEnabled = !_isBusy && hasPreview;
         }
 
         private void UpdateStatusFromJob(TranscriptionStatusResponse status, string fallbackMessage)
@@ -260,12 +272,14 @@ namespace SeeMusicApp
             }
 
             TranscriptionProgressBar.Value = Math.Max(0, Math.Min(100, status.Progress));
-            TxtTempo.Text = status.DetectedTempoBpm.HasValue ? status.DetectedTempoBpm.Value.ToString("0.0") : "--";
-            TxtMeter.Text = string.IsNullOrWhiteSpace(status.DetectedTimeSignature) ? "--/--" : status.DetectedTimeSignature;
-            TxtMeasures.Text = status.MeasureCount.HasValue ? status.MeasureCount.Value.ToString() : "--";
-            TxtTranscriptionStatus.Text = string.IsNullOrWhiteSpace(status.ErrorMessage)
+            var displayMessage = string.IsNullOrWhiteSpace(status.ErrorMessage)
                 ? fallbackMessage
                 : status.ErrorMessage;
+            TxtTranscriptionStatus.Text = string.IsNullOrWhiteSpace(displayMessage)
+                ? "识谱任务正在处理中..."
+                : displayMessage;
+
+            ApplyProcessingState(TxtTranscriptionStatus.Text, status);
         }
 
         private void ApplyScore(ScoreDetailResponse score)
@@ -273,12 +287,26 @@ namespace SeeMusicApp
             _currentScore = score;
             _currentPageIndex = 1;
 
-            TxtScoreTitle.Text = string.IsNullOrWhiteSpace(score.Title) ? "双手钢琴谱预览" : score.Title;
-            TxtScoreSubtitle.Text = "当前页面固定展示只读钢琴谱，使用后端返回的 MusicXML 与 SVG 预览同步浏览双手结果。";
-            TxtTempo.Text = score.TempoBpm.HasValue ? score.TempoBpm.Value.ToString("0.0") : "--";
-            TxtMeter.Text = string.IsNullOrWhiteSpace(score.TimeSignature) ? "--/--" : score.TimeSignature;
-            TxtKey.Text = string.IsNullOrWhiteSpace(score.KeySignature) ? "--" : score.KeySignature;
-            TxtMeasures.Text = score.MeasureCount > 0 ? score.MeasureCount.ToString() : "--";
+            TxtScoreTitle.Text = "双手钢琴谱预览";
+            TxtScoreSubtitle.Text = "当前页面固定展示只读双手钢琴谱，并沿着连续卡片继续展开音轨、结构和分配结果。";
+            TxtHeroProjectTitle.Text = string.IsNullOrWhiteSpace(score.Title) ? GetProjectDisplayTitle() : score.Title;
+            TxtHeroDescription.Text = "谱面已经切换为 Verovio 渲染，五线谱、连音线、延音线与休止符都由 MusicXML 结果统一驱动。";
+            TxtHeroMeasuresChip.Text = FormatMeasureChip(score.MeasureCount);
+            TxtHeroPagesChip.Text = FormatPageChip(GetEstimatedPageCount(score));
+            TxtHeroViewerChip.Text = "全屏查看器支持纸张翻页";
+            TxtPreviewCardHint.Text = "当前页面固定展示带左手伴奏的双手钢琴谱，翻页、预览和 PDF 导出会使用同一份结果。";
+
+            TxtTempo.Text = FormatTempo(score.TempoBpm);
+            TxtMeter.Text = FormatMeter(score.TimeSignature);
+            TxtKey.Text = FormatKey(score.KeySignature);
+            TxtMeasures.Text = FormatCount(score.MeasureCount);
+
+            TxtStructureTempo.Text = FormatTempo(score.TempoBpm);
+            TxtStructureMeter.Text = FormatMeter(score.TimeSignature);
+            TxtStructureKey.Text = FormatKey(score.KeySignature);
+            TxtStructureMeasures.Text = FormatCount(score.MeasureCount);
+            TxtStructurePages.Text = FormatCount(GetEstimatedPageCount(score));
+
             TxtMelodySummary.Text = score.AnalysisSummary != null && !string.IsNullOrWhiteSpace(score.AnalysisSummary.MelodySummary)
                 ? score.AnalysisSummary.MelodySummary
                 : "暂无旋律摘要。";
@@ -289,33 +317,234 @@ namespace SeeMusicApp
                 ? score.AnalysisSummary.AssignmentSummary
                 : "暂无双手分配说明。";
 
-            WarningsPanel.Children.Clear();
-            var warnings = score.Warnings ?? new System.Collections.Generic.List<string>();
-            if (warnings.Count == 0)
-            {
-                WarningsPanel.Children.Add(CreateWarningText("当前结果没有额外警告。"));
-            }
-            else
-            {
-                foreach (var warning in warnings.Take(3))
-                {
-                    WarningsPanel.Children.Add(CreateWarningText("提示：" + warning));
-                }
-            }
+            PopulateTrackCards(score.Tracks, "当前结果暂时没有可展示的音轨摘要。");
+            PopulateWarnings(score.Warnings, "当前结果没有额外警告。");
 
             RenderCurrentPage();
-            SetBusy(false);
         }
 
-        private TextBlock CreateWarningText(string text)
+        private void ApplySelectionState()
         {
-            return new TextBlock
+            TxtScoreTitle.Text = "双手钢琴谱预览";
+            TxtScoreSubtitle.Text = "右侧结果会按连续卡片工作台展开，先看谱面，再继续查看音轨、结构与双手分配。";
+            TxtHeroProjectTitle.Text = GetProjectDisplayTitle();
+            TxtHeroDescription.Text = "音频已经准备完成，点击“生成双手钢琴谱”后，工作台会从谱面预览一路串联到音轨、结构和双手分配结果。";
+            TxtHeroViewerChip.Text = "全屏查看器支持纸张翻页";
+            TxtPreviewCardHint.Text = "当前预览区正在等待本次识谱结果，生成完成后会自动切换到 Verovio 谱面浏览。";
+        }
+
+        private void ApplyProcessingState(string message, TranscriptionStatusResponse status = null)
+        {
+            TxtScoreTitle.Text = "双手钢琴谱预览";
+            TxtScoreSubtitle.Text = "系统正在沿着连续卡片工作台刷新当前项目的识谱进度、结构摘要和谱面预览。";
+            TxtHeroProjectTitle.Text = GetProjectDisplayTitle();
+            TxtHeroDescription.Text = string.IsNullOrWhiteSpace(message) ? "识谱任务正在处理中..." : message;
+            TxtHeroMeasuresChip.Text = status != null && status.MeasureCount.HasValue
+                ? FormatMeasureChip(status.MeasureCount.Value)
+                : "共 -- 小节";
+            TxtHeroPagesChip.Text = status != null && status.EstimatedPageCount.HasValue
+                ? FormatPageChip(status.EstimatedPageCount.Value)
+                : "预计 -- 页";
+            TxtHeroViewerChip.Text = "结果返回后支持纸张翻页";
+            TxtPreviewCardHint.Text = "系统正在生成 MusicXML 与 SVG 预览，成功后会直接在这里显示当前谱面。";
+
+            TxtTempo.Text = status != null && status.DetectedTempoBpm.HasValue ? FormatTempo(status.DetectedTempoBpm) : "--";
+            TxtMeter.Text = status != null ? FormatMeter(status.DetectedTimeSignature) : "--/--";
+            TxtKey.Text = "--";
+            TxtMeasures.Text = status != null && status.MeasureCount.HasValue ? FormatCount(status.MeasureCount.Value) : "--";
+
+            TxtStructureTempo.Text = status != null && status.DetectedTempoBpm.HasValue ? FormatTempo(status.DetectedTempoBpm) : "--";
+            TxtStructureMeter.Text = status != null ? FormatMeter(status.DetectedTimeSignature) : "--/--";
+            TxtStructureKey.Text = "--";
+            TxtStructureMeasures.Text = status != null && status.MeasureCount.HasValue ? FormatCount(status.MeasureCount.Value) : "--";
+            TxtStructurePages.Text = status != null && status.EstimatedPageCount.HasValue ? FormatCount(status.EstimatedPageCount.Value) : "--";
+
+            TxtMelodySummary.Text = "系统正在提取主旋律与右手线条，请稍候。";
+            TxtAccompanimentSummary.Text = "系统正在整理左手织体和伴奏骨架。";
+            TxtAssignmentSummary.Text = "系统正在生成左右手分配与处理说明。";
+
+            PopulateTrackCards(status != null ? status.TrackSummaries : null, "运行音轨分离后，这里会展示左右手轨道、音域和处理摘要。");
+            PopulateWarnings(status != null ? status.Warnings : null, "任务处理中，当前还没有额外提示。");
+        }
+
+        private void ApplyFailureState(string errorMessage)
+        {
+            TxtScoreTitle.Text = "双手钢琴谱预览";
+            TxtScoreSubtitle.Text = "本次识谱未成功完成，你可以修正音频或服务状态后重新发起识谱。";
+            TxtHeroProjectTitle.Text = GetProjectDisplayTitle();
+            TxtHeroDescription.Text = "当前流程未能生成完整乐谱：" + errorMessage;
+            TxtHeroViewerChip.Text = "修正后可重新生成预览";
+            TxtPreviewCardHint.Text = "当前没有可展示的谱面预览，请检查音频质量和服务状态后重试。";
+            TxtAssignmentSummary.Text = "当前没有可用的双手分配说明。";
+
+            PopulateTrackCards(null, "这次识谱没有成功生成音轨分离结果。");
+            PopulateWarnings(new[] { "请检查音频清晰度、时长与后端服务状态后重试。" }, null);
+        }
+
+        private void PopulateTrackCards(IEnumerable<ScoreTrackResponse> tracks, string emptyMessage)
+        {
+            TracksPanel.Children.Clear();
+            var trackList = tracks == null
+                ? new List<ScoreTrackResponse>()
+                : tracks.Where(track => track != null).Take(6).ToList();
+
+            if (trackList.Count == 0)
             {
-                Text = text,
-                Margin = new Thickness(0, 0, 0, 6),
+                TracksPanel.Children.Add(CreatePlaceholderCard(emptyMessage));
+                return;
+            }
+
+            foreach (var track in trackList)
+            {
+                TracksPanel.Children.Add(CreateTrackCard(track));
+            }
+        }
+
+        private void PopulateWarnings(IEnumerable<string> warnings, string emptyMessage)
+        {
+            WarningsPanel.Children.Clear();
+            var warningList = warnings == null
+                ? new List<string>()
+                : warnings.Where(warning => !string.IsNullOrWhiteSpace(warning)).Take(4).ToList();
+
+            if (warningList.Count == 0)
+            {
+                if (!string.IsNullOrWhiteSpace(emptyMessage))
+                {
+                    WarningsPanel.Children.Add(CreateWarningPill(emptyMessage, true));
+                }
+
+                return;
+            }
+
+            foreach (var warning in warningList)
+            {
+                WarningsPanel.Children.Add(CreateWarningPill("提示：" + warning, false));
+            }
+        }
+
+        private Border CreatePlaceholderCard(string message)
+        {
+            return new Border
+            {
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FAFCFF")),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DCE8F4")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(20),
+                Padding = new Thickness(18),
+                Margin = new Thickness(0, 0, 14, 14),
+                Width = 760,
+                Child = new TextBlock
+                {
+                    Text = string.IsNullOrWhiteSpace(message)
+                        ? "当前还没有可展示的识谱结果。"
+                        : message,
+                    FontSize = 14,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7B8CA5")),
+                    TextWrapping = TextWrapping.Wrap
+                }
+            };
+        }
+
+        private Border CreateTrackCard(ScoreTrackResponse track)
+        {
+            var container = new Border
+            {
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FAFCFF")),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DCE8F4")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(20),
+                Padding = new Thickness(18),
+                Margin = new Thickness(0, 0, 14, 14),
+                Width = 330
+            };
+
+            var content = new StackPanel();
+            var badges = new WrapPanel();
+            badges.Children.Add(CreateMetaPill(FormatHandRole(track.HandRole), "#EEF6FF", "#315A86", "#D2E4F5"));
+
+            if (track.IsGenerated)
+            {
+                badges.Children.Add(CreateMetaPill("AI 整理", "#F8F1FF", "#745B97", "#E4D8F4"));
+            }
+
+            content.Children.Add(badges);
+            content.Children.Add(new TextBlock
+            {
+                Text = string.IsNullOrWhiteSpace(track.Name) ? "未命名音轨" : track.Name,
+                Margin = new Thickness(0, 14, 0, 0),
+                FontSize = 18,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1F3F63")),
+                TextWrapping = TextWrapping.Wrap
+            });
+            content.Children.Add(new TextBlock
+            {
+                Text = "乐器：" + (string.IsNullOrWhiteSpace(track.Instrument) ? "双手钢琴" : track.Instrument),
+                Margin = new Thickness(0, 10, 0, 0),
                 FontSize = 13,
                 Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7B8CA5")),
                 TextWrapping = TextWrapping.Wrap
+            });
+            content.Children.Add(new TextBlock
+            {
+                Text = string.Format("音符 {0} · 音域 {1}", track.NoteCount, FormatMidiRange(track.RangeLowMidi, track.RangeHighMidi)),
+                Margin = new Thickness(0, 8, 0, 0),
+                FontSize = 13,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7B8CA5")),
+                TextWrapping = TextWrapping.Wrap
+            });
+            content.Children.Add(new TextBlock
+            {
+                Text = string.IsNullOrWhiteSpace(track.SummaryText) ? "当前音轨还没有额外摘要。" : track.SummaryText,
+                Margin = new Thickness(0, 14, 0, 0),
+                FontSize = 14,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#526782")),
+                TextWrapping = TextWrapping.Wrap
+            });
+
+            container.Child = content;
+            return container;
+        }
+
+        private Border CreateMetaPill(string text, string backgroundHex, string foregroundHex, string borderHex)
+        {
+            return new Border
+            {
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(backgroundHex)),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(borderHex)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(14),
+                Padding = new Thickness(12, 5, 12, 5),
+                Margin = new Thickness(0, 0, 10, 8),
+                Child = new TextBlock
+                {
+                    Text = text,
+                    FontSize = 12,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(foregroundHex))
+                }
+            };
+        }
+
+        private Border CreateWarningPill(string text, bool isNeutral)
+        {
+            return new Border
+            {
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isNeutral ? "#F7FBFF" : "#FFF7ED")),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isNeutral ? "#DCE8F4" : "#F3D4AA")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(18),
+                Padding = new Thickness(16, 10, 16, 10),
+                Margin = new Thickness(0, 0, 12, 12),
+                Child = new TextBlock
+                {
+                    Text = text,
+                    FontSize = 13,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isNeutral ? "#6D7D93" : "#91663D")),
+                    TextWrapping = TextWrapping.Wrap
+                }
             };
         }
 
@@ -325,9 +554,7 @@ namespace SeeMusicApp
             {
                 ScorePreviewBrowser.NavigateToString(BuildEmptyPreviewHtml());
                 TxtPageIndicator.Text = "第 1 / 1 页";
-                BtnPrevPage.IsEnabled = false;
-                BtnNextPage.IsEnabled = false;
-                BtnExportPdf.IsEnabled = false;
+                UpdateActionStates();
                 return;
             }
 
@@ -335,9 +562,7 @@ namespace SeeMusicApp
             var page = _currentScore.PreviewPages[_currentPageIndex - 1];
             ScorePreviewBrowser.NavigateToString(BuildPreviewHtml(page.SvgContent, _currentScore.Title, _currentPageIndex, _currentScore.PreviewPages.Count));
             TxtPageIndicator.Text = string.Format("第 {0} / {1} 页", _currentPageIndex, _currentScore.PreviewPages.Count);
-            BtnPrevPage.IsEnabled = _currentPageIndex > 1;
-            BtnNextPage.IsEnabled = _currentPageIndex < _currentScore.PreviewPages.Count;
-            BtnExportPdf.IsEnabled = true;
+            UpdateActionStates();
         }
 
         private void PrintScoreDocument()
@@ -432,31 +657,142 @@ namespace SeeMusicApp
         {
             ClearScoreOnly();
             TranscriptionProgressBar.Value = 0;
-            TxtTempo.Text = "--";
-            TxtMeter.Text = "--/--";
-            TxtKey.Text = "--";
-            TxtMeasures.Text = "--";
-            TxtScoreTitle.Text = "双手钢琴谱预览";
-            TxtScoreSubtitle.Text = "当前页面会固定展示只读钢琴谱，并同步展示拍号、速度与双手分配摘要。";
-            TxtMelodySummary.Text = "等待识谱结果。";
-            TxtAccompanimentSummary.Text = "等待识谱结果。";
-            TxtAssignmentSummary.Text = "生成后会在这里展示双手分配与处理说明。";
-            WarningsPanel.Children.Clear();
-            WarningsPanel.Children.Add(CreateWarningText("当前还没有识谱结果。"));
+            ApplyIdleWorkspaceState();
             TxtTranscriptionStatus.Text = "等待选择音频文件。";
-            TxtFooterStatus.Text = "服务连接正常，现在可以开始识谱和预览。";
-            RenderCurrentPage();
+            TxtFooterStatus.Text = _isServiceAvailable
+                ? "服务连接正常，现在可以开始识谱和预览。"
+                : "后端服务当前不可用，请先启动服务后再开始识谱。";
+            UpdateActionStates();
         }
 
         private void ClearScoreOnly()
         {
             _currentScore = null;
             _currentPageIndex = 1;
-            ScorePreviewBrowser.NavigateToString(BuildEmptyPreviewHtml());
-            TxtPageIndicator.Text = "第 1 / 1 页";
-            BtnPrevPage.IsEnabled = false;
-            BtnNextPage.IsEnabled = false;
-            BtnExportPdf.IsEnabled = false;
+            RenderCurrentPage();
+        }
+
+        private void ApplyIdleWorkspaceState()
+        {
+            TxtTempo.Text = "--";
+            TxtMeter.Text = "--/--";
+            TxtKey.Text = "--";
+            TxtMeasures.Text = "--";
+
+            TxtScoreTitle.Text = "双手钢琴谱预览";
+            TxtScoreSubtitle.Text = "右侧结果会按连续卡片工作台展开，先看谱面，再继续查看音轨、结构与双手分配。";
+            TxtHeroProjectTitle.Text = GetProjectDisplayTitle();
+            TxtHeroDescription.Text = "选择音频并开始识谱后，这里会展示 MusicXML 驱动的双手钢琴谱摘要、页数与浏览说明。";
+            TxtHeroMeasuresChip.Text = "共 -- 小节";
+            TxtHeroPagesChip.Text = "预计 -- 页";
+            TxtHeroViewerChip.Text = "全屏查看器支持纸张翻页";
+            TxtPreviewCardHint.Text = "完成一次识谱后，这里会显示只读钢琴谱预览，并和当前页码导航、导出操作保持同步。";
+
+            TxtStructureTempo.Text = "--";
+            TxtStructureMeter.Text = "--/--";
+            TxtStructureKey.Text = "--";
+            TxtStructureMeasures.Text = "--";
+            TxtStructurePages.Text = "--";
+
+            TxtMelodySummary.Text = "等待识谱结果。";
+            TxtAccompanimentSummary.Text = "等待识谱结果。";
+            TxtAssignmentSummary.Text = "生成后会在这里展示双手分配与处理说明。";
+
+            PopulateTrackCards(null, "运行音轨分离后，这里会展示左右手轨道、音域和处理摘要。");
+            PopulateWarnings(null, "当前还没有分配提示。");
+        }
+
+        private string GetProjectDisplayTitle()
+        {
+            var title = string.IsNullOrWhiteSpace(TxtProjectTitle.Text)
+                ? string.Empty
+                : TxtProjectTitle.Text.Trim();
+            return string.IsNullOrWhiteSpace(title) ? "我的智能识谱项目" : title;
+        }
+
+        private static int GetEstimatedPageCount(ScoreDetailResponse score)
+        {
+            if (score == null)
+            {
+                return 0;
+            }
+
+            if (score.EstimatedPageCount > 0)
+            {
+                return score.EstimatedPageCount;
+            }
+
+            return score.PreviewPages == null ? 0 : score.PreviewPages.Count;
+        }
+
+        private static string FormatTempo(double? tempo)
+        {
+            return tempo.HasValue ? tempo.Value.ToString("0.0") : "--";
+        }
+
+        private static string FormatMeter(string meter)
+        {
+            return string.IsNullOrWhiteSpace(meter) ? "--/--" : meter;
+        }
+
+        private static string FormatKey(string key)
+        {
+            return string.IsNullOrWhiteSpace(key) ? "--" : key;
+        }
+
+        private static string FormatCount(int value)
+        {
+            return value > 0 ? value.ToString() : "--";
+        }
+
+        private static string FormatMeasureChip(int measureCount)
+        {
+            return measureCount > 0 ? string.Format("共 {0} 小节", measureCount) : "共 -- 小节";
+        }
+
+        private static string FormatPageChip(int pageCount)
+        {
+            return pageCount > 0 ? string.Format("预计 {0} 页", pageCount) : "预计 -- 页";
+        }
+
+        private static string FormatHandRole(string handRole)
+        {
+            switch ((handRole ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "left":
+                case "lh":
+                    return "左手";
+                case "right":
+                case "rh":
+                    return "右手";
+                case "both":
+                    return "双手";
+                default:
+                    return string.IsNullOrWhiteSpace(handRole) ? "待分配" : handRole;
+            }
+        }
+
+        private static string FormatMidiRange(int? lowMidi, int? highMidi)
+        {
+            if (!lowMidi.HasValue && !highMidi.HasValue)
+            {
+                return "待分析";
+            }
+
+            if (lowMidi.HasValue && highMidi.HasValue)
+            {
+                return string.Format("{0} - {1}", FormatMidiNote(lowMidi.Value), FormatMidiNote(highMidi.Value));
+            }
+
+            return FormatMidiNote(lowMidi ?? highMidi ?? 60);
+        }
+
+        private static string FormatMidiNote(int midi)
+        {
+            var names = new[] { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+            var noteIndex = ((midi % 12) + 12) % 12;
+            var octave = (midi / 12) - 1;
+            return names[noteIndex] + octave;
         }
 
         private static string EscapeHtml(string value)

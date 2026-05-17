@@ -300,6 +300,8 @@ namespace SeeMusicApp.Models
     {
         public string SourceGender { get; set; }
         public string TargetGender { get; set; }
+        public string FeedbackLanguage { get; set; }
+        public TransposeBase TransposeBase { get; set; }
     }
 
     public sealed class TransposeSuggestionResponse
@@ -323,6 +325,11 @@ namespace SeeMusicApp.Models
         public int RhythmThresholdMs { get; set; }
         public bool AnalyzePitch { get; set; }
         public bool AnalyzeRhythm { get; set; }
+    }
+
+    public sealed class EvaluationPdfExportRequest
+    {
+        public EvaluationReportResponse Report { get; set; }
     }
 
     public sealed class EvaluationWorkflowResult

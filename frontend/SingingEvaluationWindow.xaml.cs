@@ -19,8 +19,6 @@ namespace SeeMusicApp
         private readonly AnalysisApiClient _analysisApiClient = new AnalysisApiClient();
         private string _selectedPerformanceAudioPath;
         private string _selectedReferenceAudioPath;
-        private string _currentEvaluationId;
-        private string _currentAnonymousAccessToken;
         private EvaluationReportResponse _currentReport;
 
         public SingingEvaluationWindow()
@@ -86,11 +84,11 @@ namespace SeeMusicApp
 
             var rhythmThreshold = ParseRhythmThreshold();
             SetBusyState(true);
-            TxtEvalStatus.Text = string.Format("正在连接 {0} 并提交评估任务...", _analysisApiClient.GetBackendBaseUrl());
+            TxtEvalStatus.Text = string.Format("正在连接 {0} 并执行双文件对比评估...", _analysisApiClient.GetBackendBaseUrl());
 
             try
             {
-                var workflow = await _analysisApiClient.SubmitSingingEvaluationAsync(new SingingEvaluationRequest
+                _currentReport = await _analysisApiClient.SubmitSingingEvaluationAsync(new SingingEvaluationRequest
                 {
                     PerformanceFilePath = _selectedPerformanceAudioPath,
                     ReferenceFilePath = _selectedReferenceAudioPath,
@@ -102,11 +100,7 @@ namespace SeeMusicApp
                     AnalyzeRhythm = true
                 });
 
-                _currentEvaluationId = workflow.Submit != null ? workflow.Submit.EvaluationId : null;
-                _currentAnonymousAccessToken = workflow.Submit != null ? workflow.Submit.AnonymousAccessToken : null;
-                _currentReport = workflow.Report;
-
-                ApplyEvaluationResult(workflow.Report);
+                ApplyEvaluationResult(_currentReport);
                 TxtEvalStatus.Text = _currentReport != null && _currentReport.Summary != null
                     ? string.Format("评估完成：分析 ID {0}", _currentReport.Summary.AnalysisId)
                     : "评估完成。";
@@ -124,7 +118,7 @@ namespace SeeMusicApp
 
         private async void BtnGenerateTransposeSuggestion_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_currentEvaluationId))
+            if (_currentReport == null || _currentReport.TransposeBase == null)
             {
                 MessageBox.Show("请先完成一次评估，再生成变调建议。", "SeeMusic AI", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -136,8 +130,8 @@ namespace SeeMusicApp
             try
             {
                 var response = await _analysisApiClient.GetTransposeSuggestionAsync(
-                    _currentEvaluationId,
-                    _currentAnonymousAccessToken,
+                    _currentReport.TransposeBase,
+                    _currentReport.Summary != null ? _currentReport.Summary.FeedbackLanguage : "zh-CN",
                     GetSelectedTag(ComboSourceGender, "male"),
                     GetSelectedTag(ComboTargetGender, "female"));
 
@@ -153,13 +147,49 @@ namespace SeeMusicApp
             }
         }
 
-        private void BtnExportPdf_Click(object sender, RoutedEventArgs e)
+        private async void BtnExportPdf_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("当前演示版前端还没有接入登录态，登录后才可导出 PDF 报告。", "SeeMusic AI", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (_currentReport == null || _currentReport.Summary == null)
+            {
+                MessageBox.Show("请先完成一次评估，再导出 PDF 报告。", "SeeMusic AI", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            BtnExportPdf.IsEnabled = false;
+
+            try
+            {
+                var bytes = await _analysisApiClient.ExportSingingEvaluationPdfAsync(_currentReport);
+                var saveDialog = new SaveFileDialog
+                {
+                    Title = "保存歌唱评估 PDF 报告",
+                    Filter = "PDF 文件|*.pdf",
+                    FileName = string.Format(
+                        "singing-evaluation-{0}.pdf",
+                        string.IsNullOrWhiteSpace(_currentReport.Summary.AnalysisId) ? "report" : _currentReport.Summary.AnalysisId)
+                };
+
+                if (saveDialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                File.WriteAllBytes(saveDialog.FileName, bytes);
+                MessageBox.Show("PDF 报告已导出到本地。", "SeeMusic AI", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message, "导出 PDF 失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                UpdateExportAvailability();
+            }
         }
 
         private void ResetView()
         {
+            _currentReport = null;
             TxtSummaryAnalysisId.Text = "--";
             TxtSummaryReference.Text = "--";
             TxtSummaryUserBpm.Text = "--";
@@ -592,8 +622,11 @@ namespace SeeMusicApp
 
         private void UpdateExportAvailability()
         {
-            BtnExportPdf.IsEnabled = false;
-            BtnExportPdf.ToolTip = "当前演示版前端未接入登录态，登录后可导出 PDF 报告。";
+            var hasReport = _currentReport != null && _currentReport.Summary != null;
+            BtnExportPdf.IsEnabled = hasReport;
+            BtnExportPdf.ToolTip = hasReport
+                ? "导出当前评估报告为本地 PDF 文件。"
+                : "请先完成一次评估，再导出 PDF 报告。";
         }
 
         private int ParseRhythmThreshold()

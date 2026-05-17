@@ -178,6 +178,8 @@ public sealed class TransposeSuggestionRequest
 {
     public string SourceGender { get; set; } = "male";
     public string TargetGender { get; set; } = "female";
+    public string FeedbackLanguage { get; set; } = "zh-CN";
+    public TransposeBaseDto? TransposeBase { get; set; }
 }
 
 public sealed class TransposeSuggestionResponse
@@ -189,6 +191,11 @@ public sealed class TransposeSuggestionResponse
     public string Title { get; set; } = string.Empty;
     public string Summary { get; set; } = string.Empty;
     public List<string> Tips { get; set; } = new();
+}
+
+public sealed class EvaluationPdfExportRequest
+{
+    public EvaluationReportResponse Report { get; set; } = new();
 }
 
 public sealed class EvaluationHistoryResponse
