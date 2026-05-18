@@ -257,6 +257,35 @@ public class UserService : IUserService
         };
     }
 
+    public async Task<string> UploadAvatarAsync(int userId, IFormFile file)
+    {
+        var user = await _dbContext.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException("用户不存在");
+
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "avatars");
+        Directory.CreateDirectory(uploadsDir);
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(ext))
+        {
+            throw new InvalidOperationException("不支持的文件格式");
+        }
+
+        var fileName = $"{userId}_{Guid.NewGuid()}{ext}";
+        var filePath = Path.Combine(uploadsDir, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        user.AvatarUrl = $"/uploads/avatars/{fileName}";
+        await _dbContext.SaveChangesAsync();
+
+        return user.AvatarUrl;
+    }
+
     private UserDto MapToUserDto(User user)
     {
         return new UserDto

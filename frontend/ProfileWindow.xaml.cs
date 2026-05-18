@@ -237,19 +237,35 @@ namespace SeeMusicApp
                         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
                         content.Add(fileContent, "file", Path.GetFileName(openFileDialog.FileName));
 
-                        var response = await _httpClient.PostAsync($"{ApiBaseUrl}/users/me/avatar", content);
+                        var request = new HttpRequestMessage(HttpMethod.Post, $"{ApiBaseUrl}/users/me/avatar");
+                        request.Content = content;
+                        
+                        if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+                        {
+                            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
+                        }
+
+                        var response = await _httpClient.SendAsync(request);
                         if (response.IsSuccessStatusCode)
                         {
                             var json = await response.Content.ReadAsStringAsync();
                             var res = JsonConvert.DeserializeObject<ApiResponse<string>>(json);
-                            await UpdateProfileInfo(res.Data); // 同步到用户信息
-                            MessageBox.Show("头像更新完成！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                            if (res?.Data != null)
+                            {
+                                string avatarUrl = res.Data.StartsWith("http") ? res.Data : "http://localhost:5000" + res.Data;
+                                ImgAvatar.ImageSource = new BitmapImage(new Uri(avatarUrl));
+                            }
+                        }
+                        else
+                        {
+                            var errorBody = await response.Content.ReadAsStringAsync();
+                            MessageBox.Show($"头像上传失败: {response.StatusCode}\n{errorBody}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("头像上传失败: " + ex.Message);
+                    MessageBox.Show("头像上传异常: " + ex.Message, "异常", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

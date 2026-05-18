@@ -12,4 +12,5 @@ public interface IUserService
     Task<DashboardResponse> GetDashboardAsync(int userId);
     Task<UserPreferencesDto> GetPreferencesAsync(int userId);
     Task<UserPreferencesDto> UpdatePreferencesAsync(int userId, UpdatePreferencesRequest request);
+    Task<string> UploadAvatarAsync(int userId, IFormFile file);
 }

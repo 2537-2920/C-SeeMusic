@@ -35,12 +35,14 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("me/avatar")]
-    public ActionResult<ApiResponse<string>> UploadAvatar([FromForm] AvatarUploadRequest request)
+    public async Task<ActionResult<ApiResponse<string>>> UploadAvatar([FromForm] AvatarUploadRequest request)
     {
         if (request.File == null || request.File.Length == 0)
             return BadRequest(new ApiResponse<string> { Code = 40001, Message = "file required" });
 
-        return Ok(new ApiResponse<string> { Data = "avatar-uploaded" });
+        var userId = GetCurrentUserId();
+        var avatarUrl = await _userService.UploadAvatarAsync(userId, request.File);
+        return Ok(new ApiResponse<string> { Data = avatarUrl });
     }
 
     [HttpGet("me/dashboard")]
