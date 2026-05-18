@@ -4,10 +4,13 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using Newtonsoft.Json;
 namespace SeeMusicApp
 {
     public partial class MainWindow : Window
     {
+        private readonly ApiClient _apiClient = new ApiClient();
+
         // 1. 真正的无参构造函数（WPF App.xaml 启动程序时必须依赖它！）
         public MainWindow()
         {
@@ -167,14 +170,35 @@ namespace SeeMusicApp
         }
 
         // 2. 右上角关闭按钮
-        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        private async void BtnClose_Click(object sender, RoutedEventArgs e)
         {
+            // 关闭前先调用登出接口
+            if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+            {
+                try
+                {
+                    await _apiClient.LogoutAsync();
+                }
+                catch { /* 忽略错误 */ }
+            }
+
             Application.Current.Shutdown();
         }
 
         // 3. 切换至未登录状态
-        private void BtnMockOut_Click(object sender, RoutedEventArgs e)
+        private async void BtnMockOut_Click(object sender, RoutedEventArgs e)
         {
+            // 调用后端登出接口
+            try
+            {
+                await _apiClient.LogoutAsync();
+            }
+            catch { /* 忽略错误 */ }
+
+            // 清除本地 Token
+            ApiClient.AccessToken = null;
+
+            // 切换 UI 到未登录状态
             LoggedOutView.Visibility = Visibility.Visible;
             LoggedInView.Visibility = Visibility.Collapsed;
 

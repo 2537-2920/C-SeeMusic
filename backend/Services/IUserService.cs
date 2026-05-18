@@ -14,4 +14,5 @@ public interface IUserService
     Task<UserPreferencesDto> UpdatePreferencesAsync(int userId, UpdatePreferencesRequest request);
     Task<string> UploadAvatarAsync(int userId, IFormFile file);
     void ChangePassword(int userId, string currentPassword, string newPassword);
+    void Logout(int userId);
 }

@@ -207,6 +207,22 @@ namespace SeeMusicApp
             return response.IsSuccessStatusCode;
         }
 
+        public async Task<bool> LogoutAsync()
+        {
+            var url = "http://localhost:5000/api/v1/auth/logout";
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            
+            if (!string.IsNullOrEmpty(AccessToken))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+            }
+
+            var response = await _httpClient.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            
+            return response.IsSuccessStatusCode;
+        }
+
         public async Task<byte[]> DownloadScoreAsync(int scoreId)
         {
             // 1. 获取下载路径

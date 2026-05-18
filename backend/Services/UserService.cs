@@ -61,6 +61,7 @@ public class UserService : IUserService
         }
 
         user.LastLoginAt = DateTime.UtcNow;
+        user.Status = "active";
         _dbContext.SaveChanges();
 
         var accessToken = _tokenProvider.GenerateAccessToken(user.Id, user.Username);
@@ -298,6 +299,16 @@ public class UserService : IUserService
 
         user.PasswordHash = HashPassword(newPassword);
         _dbContext.SaveChanges();
+    }
+
+    public void Logout(int userId)
+    {
+        var user = _dbContext.Users.Find(userId);
+        if (user != null)
+        {
+            user.Status = "disabled";
+            _dbContext.SaveChanges();
+        }
     }
 
     private UserDto MapToUserDto(User user)
