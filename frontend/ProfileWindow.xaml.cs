@@ -30,6 +30,7 @@ namespace SeeMusicApp
         {
             TxtLastUpdate.Text = DateTime.Now.ToString("yyyy-MM-dd");
             await LoadUserData();
+            UpdateCacheSizeDisplay();
         }
 
         private async Task LoadUserData()
@@ -65,6 +66,8 @@ namespace SeeMusicApp
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[LoadPreferences] AccessToken: {(string.IsNullOrEmpty(ApiClient.AccessToken) ? "NULL" : "Set")}");
+                
                 var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiBaseUrl}/users/me/preferences");
                 if (!string.IsNullOrEmpty(ApiClient.AccessToken))
                 {
@@ -72,9 +75,13 @@ namespace SeeMusicApp
                 }
                 
                 var response = await _httpClient.SendAsync(request);
+                System.Diagnostics.Debug.WriteLine($"[LoadPreferences] Response Status: {response.StatusCode}");
+                
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[LoadPreferences] Response Body: {json}");
+                    
                     var apiResponse = JsonConvert.DeserializeObject<ApiResponse<UserPreferencesDto>>(json);
                     
                     if (apiResponse?.Data != null)
@@ -84,32 +91,56 @@ namespace SeeMusicApp
                     }
                     else
                     {
+                        System.Diagnostics.Debug.WriteLine("[LoadPreferences] Data is null");
                         SetDefaultExportFormats();
                     }
+                }
+                else
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[LoadPreferences] Failed: {response.StatusCode} - {errorBody}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to load preferences: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[LoadPreferences] Exception: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[LoadPreferences] StackTrace: {ex.StackTrace}");
             }
         }
 
         private void SetDefaultExportFormats()
         {
-            ChkMidi.IsChecked = true;
-            ChkXml.IsChecked = true;
-            ChkPdf.IsChecked = false;
-            ChkPng.IsChecked = false;
+            RdoMidi.IsChecked = true;
         }
 
         private void UpdateExportFormatCheckboxes(List<string> formats)
         {
-            if (formats == null) return;
+            if (formats == null || formats.Count == 0)
+            {
+                SetDefaultExportFormats();
+                return;
+            }
 
-            ChkMidi.IsChecked = formats.Contains("midi");
-            ChkXml.IsChecked = formats.Contains("musicxml");
-            ChkPdf.IsChecked = formats.Contains("pdf");
-            ChkPng.IsChecked = formats.Contains("png");
+            var format = formats.FirstOrDefault()?.ToLower();
+            
+            switch (format)
+            {
+                case "midi":
+                    RdoMidi.IsChecked = true;
+                    break;
+                case "musicxml":
+                    RdoXml.IsChecked = true;
+                    break;
+                case "pdf":
+                    RdoPdf.IsChecked = true;
+                    break;
+                case "png":
+                    RdoPng.IsChecked = true;
+                    break;
+                default:
+                    RdoMidi.IsChecked = true;
+                    break;
+            }
         }
 
         private async void ChkExportFormat_Changed(object sender, RoutedEventArgs e)
@@ -119,34 +150,71 @@ namespace SeeMusicApp
 
         private async Task SaveExportFormats()
         {
+            if (string.IsNullOrEmpty(ApiClient.AccessToken))
+            {
+                System.Diagnostics.Debug.WriteLine("[SaveExportFormats] AccessToken is null or empty");
+                return;
+            }
+
             try
             {
-                var formats = new List<string>();
-                if (ChkMidi.IsChecked == true) formats.Add("midi");
-                if (ChkXml.IsChecked == true) formats.Add("musicxml");
-                if (ChkPdf.IsChecked == true) formats.Add("pdf");
-                if (ChkPng.IsChecked == true) formats.Add("png");
+                // 先获取当前的偏好设置
+                var getRequest = new HttpRequestMessage(HttpMethod.Get, $"{ApiBaseUrl}/users/me/preferences");
+                getRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
+                var getResponse = await _httpClient.SendAsync(getRequest);
+                
+                string currentTheme = "light-music"; // 默认主题
+                
+                if (getResponse.IsSuccessStatusCode)
+                {
+                    var getJson = await getResponse.Content.ReadAsStringAsync();
+                    var getApiResponse = JsonConvert.DeserializeObject<ApiResponse<UserPreferencesDto>>(getJson);
+                    if (getApiResponse?.Data != null)
+                    {
+                        currentTheme = getApiResponse.Data.Theme ?? "light-music";
+                        System.Diagnostics.Debug.WriteLine($"[SaveExportFormats] Current theme from server: {currentTheme}");
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[SaveExportFormats] Failed to get current preferences: {getResponse.StatusCode}");
+                }
 
-                var request = new { theme = "light-music", defaultExportFormats = formats, syncPreferences = true };
+                // 构建要保存的导出格式列表（单选）
+                var formats = new List<string>();
+                if (RdoMidi.IsChecked == true) formats.Add("midi");
+                else if (RdoXml.IsChecked == true) formats.Add("musicxml");
+                else if (RdoPdf.IsChecked == true) formats.Add("pdf");
+                else if (RdoPng.IsChecked == true) formats.Add("png");
+
+                // 使用当前主题和新的导出格式保存
+                var request = new { theme = currentTheme, defaultExportFormats = formats, syncPreferences = true };
                 var json = JsonConvert.SerializeObject(request);
                 
+                System.Diagnostics.Debug.WriteLine($"[SaveExportFormats] Saving - Theme: {currentTheme}, Formats: {string.Join(",", formats)}");
+                
                 var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{ApiBaseUrl}/users/me/preferences");
-                if (!string.IsNullOrEmpty(ApiClient.AccessToken))
-                {
-                    httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
-                }
+                httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
                 httpRequest.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.SendAsync(httpRequest);
+                var responseBody = await response.Content.ReadAsStringAsync();
+                
+                System.Diagnostics.Debug.WriteLine($"[SaveExportFormats] Response Status: {response.StatusCode}");
+                
                 if (!response.IsSuccessStatusCode)
                 {
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"Save export formats failed: {response.StatusCode} - {responseBody}");
+                    System.Diagnostics.Debug.WriteLine($"[SaveExportFormats] Save failed: {response.StatusCode} - {responseBody}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[SaveExportFormats] Save successful");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Save export formats error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[SaveExportFormats] Exception: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[SaveExportFormats] StackTrace: {ex.StackTrace}");
             }
         }
 
@@ -198,170 +266,235 @@ namespace SeeMusicApp
 
                     if (item.Day == today)
                     {
-                        bar.Background = new SolidColorBrush(Color.FromRgb(43, 91, 132));
-                        bar.Opacity = 1.0;
-                        if (labelMap.TryGetValue(item.Day, out var label))
-                        {
-                            label.Foreground = new SolidColorBrush(Color.FromRgb(69, 123, 157));
-                            label.FontWeight = FontWeights.Bold;
-                        }
-                    }
-                    else
-                    {
-                        bar.Background = new SolidColorBrush(Color.FromRgb(148, 163, 184));
-                        bar.Opacity = item.Value > 0 ? 0.7 : 0.3;
-                        if (labelMap.TryGetValue(item.Day, out var label))
-                        {
-                            label.Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184));
-                            label.FontWeight = FontWeights.Normal;
-                        }
+                        bar.Background = new SolidColorBrush(Color.FromRgb(0x45, 0x7b, 0x9d));
                     }
                 }
-            }
-        }
-
-        // 修改头像
-        private async void BtnEditAvatar_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "图片文件 (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png";
-            
-            if (openFileDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    using (var content = new MultipartFormDataContent())
-                    {
-                        var fileStream = File.OpenRead(openFileDialog.FileName);
-                        var fileContent = new StreamContent(fileStream);
-                        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
-                        content.Add(fileContent, "file", Path.GetFileName(openFileDialog.FileName));
-
-                        var request = new HttpRequestMessage(HttpMethod.Post, $"{ApiBaseUrl}/users/me/avatar");
-                        request.Content = content;
-                        
-                        if (!string.IsNullOrEmpty(ApiClient.AccessToken))
-                        {
-                            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
-                        }
-
-                        var response = await _httpClient.SendAsync(request);
-                        if (response.IsSuccessStatusCode)
-                        {
-                            var json = await response.Content.ReadAsStringAsync();
-                            var res = JsonConvert.DeserializeObject<ApiResponse<string>>(json);
-                            if (res?.Data != null)
-                            {
-                                string avatarUrl = res.Data.StartsWith("http") ? res.Data : "http://localhost:5000" + res.Data;
-                                ImgAvatar.ImageSource = new BitmapImage(new Uri(avatarUrl));
-                            }
-                        }
-                        else
-                        {
-                            var errorBody = await response.Content.ReadAsStringAsync();
-                            MessageBox.Show($"头像上传失败: {response.StatusCode}\n{errorBody}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("头像上传异常: " + ex.Message, "异常", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        // 修改个人资料
-        private async void BtnEditProfile_Click(object sender, RoutedEventArgs e)
-        {
-            var editWindow = new EditProfileWindow(_httpClient, ApiBaseUrl);
-
-            var result = editWindow.ShowDialog();
-            
-            if (result == true)
-            {
-                await LoadUserData();
-            }
-        }
-
-        // 修改密码
-        private void BtnChangePassword_Click(object sender, RoutedEventArgs e)
-        {
-            var changePasswordWindow = new ChangePasswordWindow(_httpClient, ApiBaseUrl);
-            changePasswordWindow.Owner = this;
-            var result = changePasswordWindow.ShowDialog();
-            
-            if (result == true)
-            {
-                // 清除旧的 Token
-                ApiClient.AccessToken = null;
-
-                // 跳转到登录页面
-                LoginWindow loginWin = new LoginWindow(true);
-                loginWin.Show();
-                this.Close();
-            }
-        }
-
-        private async Task UpdateProfileInfo(string avatarUrl = null, string displayName = null)
-        {
-            try
-            {
-                var updateDto = new UserDto { 
-                    DisplayName = displayName ?? TxtDisplayName.Text,
-                    AvatarUrl = avatarUrl 
-                };
-                
-                var content = new StringContent(JsonConvert.SerializeObject(updateDto), System.Text.Encoding.UTF8, "application/json");
-                var response = await _httpClient.PutAsync($"{ApiBaseUrl}/users/me", content);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    await LoadUserData();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("同步资料失败: " + ex.Message);
             }
         }
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (e.ButtonState == MouseButtonState.Pressed) this.DragMove();
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                this.DragMove();
+            }
         }
 
         private void BtnGoHome_Click(object sender, RoutedEventArgs e)
         {
-            MainWindow mainWin = new MainWindow(true);
+            var mainWin = new MainWindow(true, new LoginResponse
+            {
+                AccessToken = ApiClient.AccessToken,
+                User = new UserDto
+                {
+                    Username = TxtDisplayName.Text,
+                    Email = TxtEmail.Text
+                }
+            });
             mainWin.Show();
             this.Close();
         }
 
-        private async void BtnClearCache_Click(object sender, RoutedEventArgs e)
+        private void BtnEditAvatar_Click(object sender, RoutedEventArgs e)
         {
-            if (TxtCache.Text == "清除系统缓存 (0KB)") return;
-            TxtCache.Text = "正在清理缓存中...";
+            var openFileDialog = new OpenFileDialog
+            {
+                Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif;*.webp",
+                Title = "选择头像图片"
+            };
 
-            // 模拟后台删除文件的耗时
-            await Task.Delay(1200);
-
-            // 清理完毕
-            TxtCache.Text = "清除系统缓存 (0KB)";
-            TxtCache.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9CA3AF")); // 变成灰色
-
-            MessageBox.Show("成功释放 1.2GB 系统缓存空间！", "清理完成", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (openFileDialog.ShowDialog() == true)
+            {
+                var filePath = openFileDialog.FileName;
+                UploadAvatar(filePath);
+            }
         }
 
-        private void UpdateThemeButtonStyle(string selectedTheme)
+        private async void UploadAvatar(string filePath)
         {
-            var activeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#457b9d"));
-            var inactiveBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FAFAFA"));
-            var activeFg = new SolidColorBrush(Colors.White);
-            var inactiveFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64748B"));
-            var activeBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#457b9d"));
-            var inactiveBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E2E8F0"));
+            try
+            {
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    var ms = new MemoryStream();
+                    await fs.CopyToAsync(ms);
+                    ms.Position = 0;
 
-            if (selectedTheme == "dark-jazz")
+                    var content = new MultipartFormDataContent();
+                    var fileContent = new ByteArrayContent(ms.ToArray());
+                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+                    content.Add(fileContent, "file", Path.GetFileName(filePath));
+
+                    var request = new HttpRequestMessage(HttpMethod.Post, $"{ApiBaseUrl}/users/me/avatar")
+                    {
+                        Content = content
+                    };
+
+                    if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+                    {
+                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
+                    }
+
+                    var response = await _httpClient.SendAsync(request);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        var apiResponse = JsonConvert.DeserializeObject<ApiResponse<string>>(json);
+                        if (apiResponse?.Data != null)
+                        {
+                            ImgAvatar.ImageSource = new BitmapImage(new Uri("http://localhost:5000" + apiResponse.Data));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Upload avatar failed: {ex.Message}");
+            }
+        }
+
+        private void BtnEditProfile_Click(object sender, RoutedEventArgs e)
+        {
+            var editWindow = new EditProfileWindow(_httpClient, ApiBaseUrl);
+            editWindow.ShowDialog();
+        }
+
+        private void BtnChangePassword_Click(object sender, RoutedEventArgs e)
+        {
+            var changePasswordWindow = new ChangePasswordWindow(_httpClient, ApiBaseUrl);
+            changePasswordWindow.ShowDialog();
+        }
+
+        private async void BtnLogout_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, $"{ApiBaseUrl}/auth/logout");
+                if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+                {
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+                if (response.IsSuccessStatusCode)
+                {
+                    ApiClient.AccessToken = null;
+                    var loginWindow = new LoginWindow();
+                    loginWindow.Show();
+                    this.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Logout failed: {ex.Message}");
+            }
+        }
+
+        private void BtnClearCache_Click(object sender, RoutedEventArgs e)
+        {
+            var cacheSize = GetCacheSize();
+            var sizeText = cacheSize > 0 ? $"当前缓存大小：{FormatFileSize(cacheSize)}" : "当前没有缓存文件";
+            var result = MessageBox.Show($"确定要清除系统缓存吗？\n{sizeText}", "确认", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SeeMusic", "Cache");
+                    if (Directory.Exists(cacheDir))
+                    {
+                        Directory.Delete(cacheDir, true);
+                        MessageBox.Show("缓存已清除", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                        UpdateCacheSizeDisplay();
+                    }
+                    else
+                    {
+                        MessageBox.Show("没有找到缓存文件", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"清除缓存失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private string GetCacheDirectory()
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SeeMusic", "Cache");
+        }
+
+        private long GetCacheSize()
+        {
+            var cacheDir = GetCacheDirectory();
+            if (!Directory.Exists(cacheDir))
+            {
+                return 0;
+            }
+
+            try
+            {
+                var dirInfo = new DirectoryInfo(cacheDir);
+                return dirInfo.EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            int order = 0;
+            double size = bytes;
+            
+            while (size >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                size /= 1024;
+            }
+            
+            return $"{size:0.##} {sizes[order]}";
+        }
+
+        private void UpdateCacheSizeDisplay()
+        {
+            try
+            {
+                var cacheSize = GetCacheSize();
+                if (TxtCache != null)
+                {
+                    if (cacheSize > 0)
+                    {
+                        TxtCache.Text = $"清除系统缓存 ({FormatFileSize(cacheSize)})";
+                        TxtCache.Foreground = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
+                    }
+                    else
+                    {
+                        TxtCache.Text = "清除系统缓存 (无缓存)";
+                        TxtCache.Foreground = new SolidColorBrush(Color.FromRgb(0x94, 0xA3, 0xB8));
+                    }
+                }
+            }
+            catch
+            {
+                if (TxtCache != null)
+                {
+                    TxtCache.Text = "清除系统缓存";
+                }
+            }
+        }
+
+        private void UpdateThemeButtonStyle(string theme)
+        {
+            var activeBg = new SolidColorBrush(Color.FromRgb(0x45, 0x7b, 0x9d));
+            var activeFg = new SolidColorBrush(Colors.White);
+            var inactiveBg = new SolidColorBrush(Color.FromRgb(0xFA, 0xFA, 0xFA));
+            var inactiveFg = new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B));
+            var inactiveBorder = new SolidColorBrush(Color.FromRgb(0xE2, 0xE8, 0xF0));
+
+            if (theme == "dark-jazz")
             {
                 BtnThemeLight.Background = inactiveBg;
                 BtnThemeLight.Foreground = inactiveFg;
@@ -397,29 +530,48 @@ namespace SeeMusicApp
 
         private async Task SavePreference(string theme)
         {
+            System.Diagnostics.Debug.WriteLine($"[SavePreference] Start - Theme: {theme}");
+            System.Diagnostics.Debug.WriteLine($"[SavePreference] AccessToken: {(string.IsNullOrEmpty(ApiClient.AccessToken) ? "NULL" : "Set")}");
+            
+            if (string.IsNullOrEmpty(ApiClient.AccessToken))
+            {
+                MessageBox.Show("请先登录后再保存偏好设置", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             try
             {
                 var request = new { theme = theme, defaultExportFormats = new[] { "midi", "musicxml" }, syncPreferences = true };
                 var json = JsonConvert.SerializeObject(request);
                 
+                System.Diagnostics.Debug.WriteLine($"[SavePreference] Request URL: {ApiBaseUrl}/users/me/preferences");
+                System.Diagnostics.Debug.WriteLine($"[SavePreference] Request Body: {json}");
+                
                 var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"{ApiBaseUrl}/users/me/preferences");
-                if (!string.IsNullOrEmpty(ApiClient.AccessToken))
-                {
-                    httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
-                }
+                httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiClient.AccessToken);
                 httpRequest.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.SendAsync(httpRequest);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
+                System.Diagnostics.Debug.WriteLine($"[SavePreference] Response Status: {response.StatusCode}");
+                System.Diagnostics.Debug.WriteLine($"[SavePreference] Response Body: {responseBody}");
+
                 if (!response.IsSuccessStatusCode)
                 {
-                    MessageBox.Show($"保存偏好失败: {response.StatusCode}\n{responseBody}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"保存偏好失败：{response.StatusCode}\n{responseBody}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+            catch (HttpRequestException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SavePreference] HttpRequestException: {ex.Message}");
+                MessageBox.Show($"网络请求失败，请检查后端服务是否正常运行\n{ex.Message}", "网络错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存偏好异常: {ex.Message}", "异常", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Diagnostics.Debug.WriteLine($"[SavePreference] Exception: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[SavePreference] StackTrace: {ex.StackTrace}");
+                MessageBox.Show($"保存偏好异常：{ex.Message}", "异常", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

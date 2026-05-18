@@ -335,10 +335,10 @@
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="默认导出格式" FontSize="13" Foreground="#64748B" Margin="0,0,0,10"/>
                                     <WrapPanel Margin="0,0,0,25">
-                                        <CheckBox x:Name="ChkMidi" Content="MIDI" Checked="ChkExportFormat_Changed" Unchecked="ChkExportFormat_Changed"/>
-                                        <CheckBox x:Name="ChkXml" Content="XML" Checked="ChkExportFormat_Changed" Unchecked="ChkExportFormat_Changed"/>
-                                        <CheckBox x:Name="ChkPdf" Content="PDF" Checked="ChkExportFormat_Changed" Unchecked="ChkExportFormat_Changed"/>
-                                        <CheckBox x:Name="ChkPng" Content="PNG" Checked="ChkExportFormat_Changed" Unchecked="ChkExportFormat_Changed"/>
+                                        <RadioButton x:Name="RdoMidi" GroupName="ExportFormat" Content="MIDI" Checked="ChkExportFormat_Changed" Margin="0,0,15,0"/>
+                                        <RadioButton x:Name="RdoXml" GroupName="ExportFormat" Content="XML" Checked="ChkExportFormat_Changed" Margin="0,0,15,0"/>
+                                        <RadioButton x:Name="RdoPdf" GroupName="ExportFormat" Content="PDF" Checked="ChkExportFormat_Changed" Margin="0,0,15,0"/>
+                                        <RadioButton x:Name="RdoPng" GroupName="ExportFormat" Content="PNG" Checked="ChkExportFormat_Changed"/>
                                     </WrapPanel>
 
                                     <Button Background="Transparent" BorderThickness="0" HorizontalAlignment="Left" Cursor="Hand" Margin="0,15,0,0" Click="BtnClearCache_Click">

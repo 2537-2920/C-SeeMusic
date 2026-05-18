@@ -18,7 +18,7 @@ public class JwtTokenProvider
     {
         var claims = new List<Claim>
         {
-            new("userId", userId.ToString()),
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
             new(ClaimTypes.Name, username),
         };
 

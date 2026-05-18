@@ -244,8 +244,10 @@ public class UserService : IUserService
             _dbContext.UserPreferences.Add(prefs);
         }
 
-        prefs.Theme = request.Theme;
-        prefs.DefaultExportFormats = string.Join(",", request.DefaultExportFormats);
+        prefs.Theme = request.Theme ?? "light-music";
+        prefs.DefaultExportFormats = request.DefaultExportFormats != null 
+            ? string.Join(",", request.DefaultExportFormats) 
+            : string.Empty;
         prefs.SyncEnabled = request.SyncPreferences;
         
         _dbContext.SaveChanges();
@@ -253,7 +255,9 @@ public class UserService : IUserService
         return new UserPreferencesDto
         {
             Theme = prefs.Theme,
-            DefaultExportFormats = prefs.DefaultExportFormats.Split(',').ToList(),
+            DefaultExportFormats = string.IsNullOrEmpty(prefs.DefaultExportFormats) 
+                ? new List<string>() 
+                : prefs.DefaultExportFormats.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
             SyncPreferences = prefs.SyncEnabled
         };
     }
