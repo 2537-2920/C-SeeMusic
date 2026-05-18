@@ -305,31 +305,6 @@
                                         <ComboBoxItem>ASIO: External Interface</ComboBoxItem>
                                         <ComboBoxItem>DirectSound: Primary</ComboBoxItem>
                                     </ComboBox>
-
-                                    <TextBlock Text="界面主题" FontSize="13" Foreground="#64748B" Margin="0,0,0,10"/>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="15"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Button x:Name="BtnThemeLight" Grid.Column="0" Click="BtnThemeLight_Click" Background="#457b9d" Foreground="White" FontWeight="Medium" BorderThickness="0" Padding="0,12" Cursor="Hand">
-                                            <Button.Resources>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="CornerRadius" Value="8"/>
-                                                </Style>
-                                            </Button.Resources>
-                                            <TextBlock Text="浅色音乐风"/>
-                                        </Button>
-                                        <Button x:Name="BtnThemeDark" Grid.Column="2" Click="BtnThemeDark_Click" Background="#FAFAFA" Foreground="#64748B" FontWeight="Medium" BorderBrush="#E2E8F0" BorderThickness="1" Padding="0,12" Cursor="Hand">
-                                            <Button.Resources>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="CornerRadius" Value="8"/>
-                                                </Style>
-                                            </Button.Resources>
-                                            <TextBlock Text="深夜爵士风"/>
-                                        </Button>
-                                    </Grid>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2">

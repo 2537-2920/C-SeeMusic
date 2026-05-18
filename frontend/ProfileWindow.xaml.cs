@@ -86,7 +86,6 @@ namespace SeeMusicApp
                     
                     if (apiResponse?.Data != null)
                     {
-                        UpdateThemeButtonStyle(apiResponse.Data.Theme);
                         UpdateExportFormatCheckboxes(apiResponse.Data.DefaultExportFormats as List<string>);
                     }
                     else
@@ -484,48 +483,6 @@ namespace SeeMusicApp
                     TxtCache.Text = "清除系统缓存";
                 }
             }
-        }
-
-        private void UpdateThemeButtonStyle(string theme)
-        {
-            var activeBg = new SolidColorBrush(Color.FromRgb(0x45, 0x7b, 0x9d));
-            var activeFg = new SolidColorBrush(Colors.White);
-            var inactiveBg = new SolidColorBrush(Color.FromRgb(0xFA, 0xFA, 0xFA));
-            var inactiveFg = new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B));
-            var inactiveBorder = new SolidColorBrush(Color.FromRgb(0xE2, 0xE8, 0xF0));
-
-            if (theme == "dark-jazz")
-            {
-                BtnThemeLight.Background = inactiveBg;
-                BtnThemeLight.Foreground = inactiveFg;
-                BtnThemeLight.BorderBrush = inactiveBorder;
-                BtnThemeLight.BorderThickness = new Thickness(1);
-                BtnThemeDark.Background = activeBg;
-                BtnThemeDark.Foreground = activeFg;
-                BtnThemeDark.BorderThickness = new Thickness(0);
-            }
-            else
-            {
-                BtnThemeLight.Background = activeBg;
-                BtnThemeLight.Foreground = activeFg;
-                BtnThemeLight.BorderThickness = new Thickness(0);
-                BtnThemeDark.Background = inactiveBg;
-                BtnThemeDark.Foreground = inactiveFg;
-                BtnThemeDark.BorderBrush = inactiveBorder;
-                BtnThemeDark.BorderThickness = new Thickness(1);
-            }
-        }
-
-        private async void BtnThemeLight_Click(object sender, RoutedEventArgs e)
-        {
-            await SavePreference("light-music");
-            UpdateThemeButtonStyle("light-music");
-        }
-
-        private async void BtnThemeDark_Click(object sender, RoutedEventArgs e)
-        {
-            await SavePreference("dark-jazz");
-            UpdateThemeButtonStyle("dark-jazz");
         }
 
         private async Task SavePreference(string theme)
