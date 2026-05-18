@@ -69,6 +69,21 @@ public class UsersController : ControllerBase
         return Ok(new ApiResponse<UserPreferencesDto> { Data = preferences });
     }
 
+    [HttpPut("me/password")]
+    public ActionResult<ApiResponse<string>> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            _userService.ChangePassword(userId, request.CurrentPassword, request.NewPassword);
+            return Ok(new ApiResponse<string> { Data = "密码修改成功" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ApiResponse<string> { Code = 40001, Message = ex.Message });
+        }
+    }
+
     private int GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);

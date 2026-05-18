@@ -283,6 +283,25 @@ namespace SeeMusicApp
             }
         }
 
+        // 修改密码
+        private void BtnChangePassword_Click(object sender, RoutedEventArgs e)
+        {
+            var changePasswordWindow = new ChangePasswordWindow(_httpClient, ApiBaseUrl);
+            changePasswordWindow.Owner = this;
+            var result = changePasswordWindow.ShowDialog();
+            
+            if (result == true)
+            {
+                // 清除旧的 Token
+                ApiClient.AccessToken = null;
+
+                // 跳转到登录页面
+                LoginWindow loginWin = new LoginWindow(true);
+                loginWin.Show();
+                this.Close();
+            }
+        }
+
         private async Task UpdateProfileInfo(string avatarUrl = null, string displayName = null)
         {
             try

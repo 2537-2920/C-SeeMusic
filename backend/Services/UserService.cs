@@ -286,6 +286,20 @@ public class UserService : IUserService
         return user.AvatarUrl;
     }
 
+    public void ChangePassword(int userId, string currentPassword, string newPassword)
+    {
+        var user = _dbContext.Users.Find(userId)
+            ?? throw new InvalidOperationException("用户不存在");
+
+        if (!VerifyPassword(currentPassword, user.PasswordHash))
+        {
+            throw new InvalidOperationException("当前密码不正确");
+        }
+
+        user.PasswordHash = HashPassword(newPassword);
+        _dbContext.SaveChanges();
+    }
+
     private UserDto MapToUserDto(User user)
     {
         return new UserDto

@@ -33,3 +33,9 @@ public sealed class AuthResponse
     public int ExpiresIn { get; set; }
     public UserDto User { get; set; } = new UserDto();
 }
+
+public sealed class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}

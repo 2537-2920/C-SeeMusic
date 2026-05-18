@@ -216,7 +216,7 @@
 
                             <Grid Margin="0,0,0,20">
                                 <TextBlock Text="登录密码" Foreground="#475569" FontWeight="Medium" VerticalAlignment="Center"/>
-                                <Button Content="修改" Background="Transparent" BorderThickness="0" Foreground="#94A3B8" FontSize="13" HorizontalAlignment="Right" Cursor="Hand"/>
+                                <Button x:Name="BtnChangePassword" Content="修改" Background="Transparent" BorderThickness="0" Foreground="#94A3B8" FontSize="13" HorizontalAlignment="Right" Cursor="Hand" Click="BtnChangePassword_Click"/>
                             </Grid>
                             <Grid Margin="0,0,0,20">
                                 <TextBlock Text="隐私权限" Foreground="#475569" FontWeight="Medium" VerticalAlignment="Center"/>
@@ -236,7 +236,7 @@
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,25">
                                 <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" Foreground="#457b9d" FontSize="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBlock Text="使用数据统计" FontWeight="Bold" FontSize="16" Foreground="#457b9d" VerticalAlignment="Center"/>
+                                <TextBlock Text="上传乐谱统计" FontWeight="Bold" FontSize="16" Foreground="#457b9d" VerticalAlignment="Center"/>
                             </StackPanel>
 
                             <Border Background="#F8FAFC" CornerRadius="16" Height="220" Padding="20,20,20,10">
