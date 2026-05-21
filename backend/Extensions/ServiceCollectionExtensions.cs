@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IInstantTranscriptionService, InstantTranscriptionService>();
         services.AddScoped<IMediaService, NoDatabaseMediaService>();
         services.AddScoped<ITranscriptionService, NoDatabaseTranscriptionService>();
+        services.AddScoped<ICommunityService, NoDatabaseCommunityService>();
         return services;
     }
 

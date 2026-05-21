@@ -13,7 +13,8 @@
       "PowerShell(dotnet build E:\\\\seemusic\\\\frontend\\\\SeeMusicApp.csproj 2>&1)",
       "Bash(python3 -c ' *)",
       "PowerShell($lines = Get-Content \"E:\\\\seemusic\\\\frontend\\\\TranscriptionWindow.xaml\" -Encoding UTF8; $line = $lines[227]; Write-Output \"Line 228: $line\"; Write-Output \"Char at pos 63: $\\($line[62]\\)\")",
-      "PowerShell($lines = Get-Content \"E:\\\\seemusic\\\\frontend\\\\TranscriptionWindow.xaml\" -Encoding UTF8; for \\($i=0; $i -lt $lines.Count; $i++\\) { if \\($lines[$i] -match '\"生成'\\) { Write-Output \"Line $\\($i+1\\): $\\($lines[$i]\\)\" } })"
+      "PowerShell($lines = Get-Content \"E:\\\\seemusic\\\\frontend\\\\TranscriptionWindow.xaml\" -Encoding UTF8; for \\($i=0; $i -lt $lines.Count; $i++\\) { if \\($lines[$i] -match '\"生成'\\) { Write-Output \"Line $\\($i+1\\): $\\($lines[$i]\\)\" } })",
+      "Read(//c//**)"
     ]
   }
 }

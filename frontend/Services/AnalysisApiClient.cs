@@ -6,17 +6,13 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
+using Newtonsoft.Json;
 
 namespace SeeMusicApp.Services
 {
     public sealed class AnalysisApiClient
     {
         private static readonly HttpClient HttpClient = CreateHttpClient();
-        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer
-        {
-            MaxJsonLength = int.MaxValue
-        };
 
         public async Task<AnalysisWorkflowResult> AnalyzeAudioAsync(
             string filePath,
@@ -52,7 +48,7 @@ namespace SeeMusicApp.Services
 
         public async Task<CreateTranscriptionResponse> CreatePianoTranscriptionAsync(string mediaId, string projectTitle)
         {
-            var json = _serializer.Serialize(new CreateTranscriptionRequest
+            var json = JsonConvert.SerializeObject(new CreateTranscriptionRequest
             {
                 SourceType = "audio",
                 MediaId = mediaId,
@@ -155,7 +151,7 @@ namespace SeeMusicApp.Services
             string sourceGender,
             string targetGender)
         {
-            var json = _serializer.Serialize(new TransposeSuggestionRequest
+            var json = JsonConvert.SerializeObject(new TransposeSuggestionRequest
             {
                 TransposeBase = transposeBase,
                 FeedbackLanguage = string.IsNullOrWhiteSpace(feedbackLanguage) ? "zh-CN" : feedbackLanguage,
@@ -178,7 +174,7 @@ namespace SeeMusicApp.Services
                 throw new InvalidOperationException("当前没有可导出的评估报告。");
             }
 
-            var json = _serializer.Serialize(new EvaluationPdfExportRequest
+            var json = JsonConvert.SerializeObject(new EvaluationPdfExportRequest
             {
                 Report = report
             });
@@ -229,7 +225,7 @@ namespace SeeMusicApp.Services
 
         private async Task<TranscriptionResult> RequestAnalysisAsync(TranscriptionRequest request)
         {
-            var json = _serializer.Serialize(request);
+            var json = JsonConvert.SerializeObject(request);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
                 var response = await HttpClient.PostAsync(BuildUrl("/api/v1/transcriptions/analyze"), content);
@@ -292,7 +288,7 @@ namespace SeeMusicApp.Services
                 {
                     try
                     {
-                        payload = _serializer.Deserialize<ApiResponse<T>>(body);
+                        payload = JsonConvert.DeserializeObject<ApiResponse<T>>(body);
                     }
                     catch (Exception)
                     {
@@ -330,7 +326,7 @@ namespace SeeMusicApp.Services
             {
                 try
                 {
-                    var payload = _serializer.Deserialize<ApiResponse<object>>(body);
+                    var payload = JsonConvert.DeserializeObject<ApiResponse<object>>(body);
                     if (payload != null && !string.IsNullOrWhiteSpace(payload.Message))
                     {
                         return payload.Message;

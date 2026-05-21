@@ -24,6 +24,8 @@ public class MediaUploadResponse
 public class TranscriptionRequest
 {
     public string MediaId { get; set; } = string.Empty;
+    public bool SeparateMelody { get; set; } = true;
+    public bool SeparateAccompaniment { get; set; } = true;
 }
 
 public class TranscriptionResult
