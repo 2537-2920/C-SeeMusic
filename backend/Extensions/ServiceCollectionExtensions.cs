@@ -15,6 +15,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IInstantSingingEvaluationService, InstantSingingEvaluationService>();
         services.AddScoped<ITransposeSuggestionService, InstantTransposeSuggestionService>();
         services.AddScoped<IPdfExportService, PdfExportService>();
+        services.AddScoped<IPianoTranscriptionService, PianoTranscriptionService>();
+        services.AddScoped<IInstantTranscriptionService, InstantTranscriptionService>();
+        services.AddScoped<IMediaService, NoDatabaseMediaService>();
+        services.AddScoped<ITranscriptionService, NoDatabaseTranscriptionService>();
         return services;
     }
 
@@ -23,7 +27,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IMediaService, MediaService>();
         services.AddScoped<IAudioPreparationService, AudioPreparationService>();
-        services.AddScoped<IPianoTranscriptionService, PianoTranscriptionService>();
         services.AddScoped<ITranscriptionService, TranscriptionService>();
         services.AddScoped<IEvaluationService, EvaluationService>();
         services.AddSingleton<ITranscriptionTaskQueue, TranscriptionTaskQueue>();

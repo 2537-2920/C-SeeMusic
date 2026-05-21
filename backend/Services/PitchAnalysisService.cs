@@ -65,7 +65,7 @@ public sealed class PitchAnalysisService : IPitchAnalysisService
             var performanceAudio = WavAudioReader.Read(performancePath);
             var referenceAudio = WavAudioReader.Read(referencePath);
 
-            var performanceCurve = ExtractPitchCurve(performanceAudio, normalizedOptions, isReference: false);
+            var performanceCurve = ExtractPitchCurve(performanceAudio, normalizedOptions);
             if (performanceCurve.Count < 8)
             {
                 return new PitchAnalysisResult
@@ -77,7 +77,7 @@ public sealed class PitchAnalysisService : IPitchAnalysisService
                 };
             }
 
-            var referenceCurve = ExtractPitchCurve(referenceAudio, normalizedOptions, isReference: true);
+            var referenceCurve = ExtractPitchCurve(referenceAudio, normalizedOptions);
             var referenceVoicedCoverage = EstimateVoicedCoverage(referenceCurve, referenceAudio.DurationSeconds);
             if (referenceCurve.Count < 8 || referenceVoicedCoverage < 0.25)
             {
@@ -167,24 +167,17 @@ public sealed class PitchAnalysisService : IPitchAnalysisService
 
     private static List<PitchPoint> ExtractPitchCurve(
         WavAudioData audioData,
-        EvaluationOptionsRequest options,
-        bool isReference)
+        EvaluationOptionsRequest options)
     {
         var downsampled = Downsample(audioData.Samples, audioData.SampleRate, out var sampleRate);
         var normalized = NormalizeSamples(downsampled);
         const int frameSize = 1024;
         const int hopSize = 256;
 
-        var minimumEnergy = isReference
-            ? 0.018
-            : string.Equals(options.UserAudioType, "clean_vocal", StringComparison.OrdinalIgnoreCase)
-                ? 0.014
-                : 0.03;
-        var minimumCorrelation = isReference
-            ? 0.52
-            : string.Equals(options.UserAudioType, "clean_vocal", StringComparison.OrdinalIgnoreCase)
-                ? 0.50
-                : 0.60;
+        var isCleanVocal = string.Equals(options.UserAudioType, "clean_vocal", StringComparison.OrdinalIgnoreCase);
+        var minimumEnergy = isCleanVocal ? 0.014 : 0.018;
+        var minimumCorrelation = isCleanVocal ? 0.50 : 0.52;
+        var smoothingWindow = isCleanVocal ? 2 : 3;
 
         var points = new List<PitchPoint>();
         for (var frameStart = 0; frameStart + frameSize < normalized.Length; frameStart += hopSize)
@@ -199,9 +192,6 @@ public sealed class PitchAnalysisService : IPitchAnalysisService
             points.Add(new PitchPoint(time, pitch.Value));
         }
 
-        var smoothingWindow = isReference
-            ? 3
-            : string.Equals(options.UserAudioType, "clean_vocal", StringComparison.OrdinalIgnoreCase) ? 2 : 5;
         return SmoothPoints(points, smoothingWindow);
     }
 

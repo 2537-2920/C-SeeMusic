@@ -125,6 +125,30 @@ namespace SeeMusicApp.Services
             return await SubmitSingingEvaluationRequestAsync(request);
         }
 
+        public async Task<ScoreDetailResponse> TranscribeInstantAsync(string filePath, string title)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                throw new InvalidOperationException("请先选择可用的本地音频文件。");
+            }
+
+            using (var form = new MultipartFormDataContent())
+            using (var stream = File.OpenRead(filePath))
+            using (var fileContent = new StreamContent(stream))
+            {
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(GetMimeType(filePath));
+                form.Add(fileContent, "audioFile", Path.GetFileName(filePath));
+                form.Add(new StringContent(string.IsNullOrWhiteSpace(title) ? string.Empty : title), "title");
+                form.Add(new StringContent("true"), "separateMelody");
+                form.Add(new StringContent("true"), "separateAccompaniment");
+                form.Add(new StringContent("true"), "analyzeRhythm");
+
+                var response = await HttpClient.PostAsync(BuildUrl("/api/v1/transcriptions/instant"), form);
+                var payload = await ReadApiResponseAsync<ScoreDetailResponse>(response);
+                return payload.Data;
+            }
+        }
+
         public async Task<TransposeSuggestionResponse> GetTransposeSuggestionAsync(
             TransposeBase transposeBase,
             string feedbackLanguage,
@@ -160,8 +184,8 @@ namespace SeeMusicApp.Services
             });
 
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+            using (var response = await HttpClient.PostAsync(BuildUrl("/api/v1/singing/evaluate/export-pdf"), content))
             {
-                var response = await HttpClient.PostAsync(BuildUrl("/api/v1/singing/evaluate/export-pdf"), content);
                 if (!response.IsSuccessStatusCode)
                 {
                     throw new InvalidOperationException(await ReadErrorMessageAsync(response));
@@ -259,28 +283,44 @@ namespace SeeMusicApp.Services
 
         private async Task<ApiResponse<T>> ReadApiResponseAsync<T>(HttpResponseMessage response)
         {
-            var body = await response.Content.ReadAsStringAsync();
-            ApiResponse<T> payload = null;
-
-            if (!string.IsNullOrWhiteSpace(body))
+            using (response)
             {
-                payload = _serializer.Deserialize<ApiResponse<T>>(body);
-            }
+                var body = await response.Content.ReadAsStringAsync();
+                ApiResponse<T> payload = null;
 
-            if (payload == null)
-            {
-                throw new InvalidOperationException("后端返回了空响应。");
-            }
+                if (!string.IsNullOrWhiteSpace(body))
+                {
+                    try
+                    {
+                        payload = _serializer.Deserialize<ApiResponse<T>>(body);
+                    }
+                    catch (Exception)
+                    {
+                        // Response body is not valid JSON
+                    }
+                }
 
-            if (!response.IsSuccessStatusCode || payload.Code != 0 || payload.Data == null)
-            {
-                var message = string.IsNullOrWhiteSpace(payload.Message)
-                    ? string.Format("请求失败，HTTP {0}", (int)response.StatusCode)
-                    : payload.Message;
-                throw new InvalidOperationException(message);
-            }
+                if (payload == null)
+                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new InvalidOperationException(
+                            string.Format("请求失败（HTTP {0}），服务器返回了无效响应。请确认后端服务是否正常运行，以及数据库是否已配置。", (int)response.StatusCode));
+                    }
 
-            return payload;
+                    throw new InvalidOperationException("后端返回了空响应。");
+                }
+
+                if (!response.IsSuccessStatusCode || payload.Code != 0 || payload.Data == null)
+                {
+                    var message = string.IsNullOrWhiteSpace(payload.Message)
+                        ? string.Format("请求失败，HTTP {0}", (int)response.StatusCode)
+                        : payload.Message;
+                    throw new InvalidOperationException(message);
+                }
+
+                return payload;
+            }
         }
 
         private async Task<string> ReadErrorMessageAsync(HttpResponseMessage response)
@@ -311,8 +351,9 @@ namespace SeeMusicApp.Services
 
         private static HttpClient CreateHttpClient()
         {
+            System.Net.ServicePointManager.DefaultConnectionLimit = 10;
             var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromMinutes(10);
             return client;
         }
 

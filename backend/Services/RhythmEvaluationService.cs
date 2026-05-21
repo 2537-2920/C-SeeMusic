@@ -80,20 +80,20 @@ public sealed class RhythmEvaluationService : IRhythmEvaluationService
 
         var coverage = Math.Round(Math.Min(performanceAnalysis.BeatTimes.Count, referenceAnalysis.BeatTimes.Count)
             / (double)Math.Max(1, Math.Max(performanceAnalysis.BeatTimes.Count, referenceAnalysis.BeatTimes.Count)) * 100.0, 1);
-        var consistency = Math.Round(Math.Clamp(performanceAnalysis.Stability, 0.0, 1.0) * 100.0, 1);
+        var relativeStability = referenceAnalysis.Stability > 1e-9
+            ? Math.Clamp(performanceAnalysis.Stability / referenceAnalysis.Stability, 0.0, 1.0)
+            : 1.0;
+        var consistency = Math.Round(relativeStability * 100.0, 1);
         var averageDeviationMs = segments.Count == 0
             ? 0.0
             : Math.Round(segments.Where(segment => segment.DeviationValue.HasValue).Average(segment => segment.DeviationValue!.Value), 1);
-        var confidenceScore = Math.Clamp(performanceAnalysis.Confidence, 0.0, 1.0) * 100.0;
-        var stabilityScore = Math.Clamp(performanceAnalysis.Stability, 0.0, 1.0) * 100.0;
         var timingScore = segments.Count == 0
             ? Math.Clamp(100.0 - averageDeviationMs / Math.Max(20.0, thresholdMs) * 30.0, 0.0, 100.0)
             : Math.Clamp(segments.Average(segment => segment.Score ?? 0.0), 0.0, 100.0);
         var score = Math.Round(
-            confidenceScore * 0.20
-            + stabilityScore * 0.30
-            + coverage * 0.15
-            + timingScore * 0.35,
+            relativeStability * 100.0 * 0.25
+            + coverage * 0.25
+            + timingScore * 0.50,
             1);
 
         return new RhythmEvaluationResult

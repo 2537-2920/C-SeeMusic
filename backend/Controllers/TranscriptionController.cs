@@ -11,10 +11,14 @@ namespace backend.Controllers;
 public class TranscriptionController : ControllerBase
 {
     private readonly ITranscriptionService _transcriptionService;
+    private readonly IInstantTranscriptionService _instantTranscriptionService;
 
-    public TranscriptionController(ITranscriptionService transcriptionService)
+    public TranscriptionController(
+        ITranscriptionService transcriptionService,
+        IInstantTranscriptionService instantTranscriptionService)
     {
         _transcriptionService = transcriptionService;
+        _instantTranscriptionService = instantTranscriptionService;
     }
 
     [HttpPost]
@@ -65,6 +69,45 @@ public class TranscriptionController : ControllerBase
         catch (Exception exception)
         {
             return BuildErrorResponse<TranscriptionResult>(exception);
+        }
+    }
+
+    [HttpPost("instant")]
+    [AllowAnonymous]
+    [RequestFormLimits(MultipartBodyLengthLimit = 500_000_000)]
+    [RequestSizeLimit(500_000_000)]
+    public async Task<ActionResult<ApiResponse<ScoreDetailResponse>>> Instant(
+        [FromForm] IFormFile audioFile,
+        [FromForm] string title = "",
+        [FromForm] bool separateMelody = true,
+        [FromForm] bool separateAccompaniment = true,
+        [FromForm] bool analyzeRhythm = true,
+        CancellationToken cancellationToken = default)
+    {
+        if (audioFile == null || audioFile.Length == 0)
+        {
+            return BadRequest(new ApiResponse<ScoreDetailResponse> { Code = 40001, Message = "audioFile required" });
+        }
+
+        try
+        {
+            var score = await _instantTranscriptionService.TranscribeAsync(
+                audioFile,
+                title,
+                new TranscriptionOptionsRequest
+                {
+                    Mode = "piano",
+                    SeparateMelody = separateMelody,
+                    SeparateAccompaniment = separateAccompaniment,
+                    AnalyzeRhythm = analyzeRhythm
+                },
+                cancellationToken);
+
+            return Ok(new ApiResponse<ScoreDetailResponse> { Data = score });
+        }
+        catch (Exception exception)
+        {
+            return BuildErrorResponse<ScoreDetailResponse>(exception);
         }
     }
 

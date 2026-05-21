@@ -25,6 +25,8 @@ public class SingingEvaluationController : ControllerBase
 
     [HttpPost]
     [AllowAnonymous]
+    [RequestFormLimits(MultipartBodyLengthLimit = 500_000_000)]
+    [RequestSizeLimit(500_000_000)]
     public async Task<ActionResult<ApiResponse<EvaluationReportResponse>>> Submit(
         [FromForm] IFormFile performanceFile,
         [FromForm] IFormFile? referenceFile,

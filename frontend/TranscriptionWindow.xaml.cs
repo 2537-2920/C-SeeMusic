@@ -4,7 +4,6 @@ using SeeMusicApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -32,6 +31,13 @@ namespace SeeMusicApp
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                await ScorePreviewBrowser.EnsureCoreWebView2Async();
+                ScorePreviewBrowser.NavigateToString(BuildEmptyPreviewHtml());
+            }
+            catch { }
+
             await RefreshHealthAsync();
         }
 
@@ -52,6 +58,8 @@ namespace SeeMusicApp
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
         {
+            var mainWin = new MainWindow(true);
+            mainWin.Show();
             Close();
         }
 
@@ -96,56 +104,16 @@ namespace SeeMusicApp
 
             SetBusy(true);
             ClearScoreOnly();
-            TranscriptionProgressBar.Value = 8;
-            TxtTranscriptionStatus.Text = "正在上传音频并创建识谱任务...";
-            TxtFooterStatus.Text = "识谱任务已开始，工作台会沿着连续卡片同步刷新处理进度。";
+            TranscriptionProgressBar.Value = 10;
+            TxtTranscriptionStatus.Text = "正在上传音频并识谱，请稍候...";
+            TxtFooterStatus.Text = "识谱已开始，正在提取旋律与生成双手钢琴谱，请耐心等待。";
             ApplyProcessingState(TxtTranscriptionStatus.Text);
 
             try
             {
-                var upload = await _analysisApiClient.UploadAudioAsync(_selectedAudioPath);
-                TranscriptionProgressBar.Value = 18;
-
                 var title = GetProjectDisplayTitle();
-                var createResponse = await _analysisApiClient.CreatePianoTranscriptionAsync(upload.MediaId, title);
-                var status = new TranscriptionStatusResponse
-                {
-                    JobId = createResponse.JobId,
-                    Status = createResponse.Status,
-                    Progress = createResponse.Progress,
-                    ScoreId = createResponse.ScoreId,
-                    Warnings = new List<string>()
-                };
+                var score = await _analysisApiClient.TranscribeInstantAsync(_selectedAudioPath, title);
 
-                UpdateStatusFromJob(status, createResponse.Message);
-
-                for (var attempt = 0; attempt < 40; attempt++)
-                {
-                    if (string.Equals(status.Status, "succeeded", StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(status.Status, "failed", StringComparison.OrdinalIgnoreCase))
-                    {
-                        break;
-                    }
-
-                    await Task.Delay(TimeSpan.FromSeconds(1.5));
-                    status = await _analysisApiClient.GetTranscriptionStatusAsync(createResponse.JobId);
-                    UpdateStatusFromJob(status, "识谱任务正在处理中...");
-                }
-
-                if (string.Equals(status.Status, "failed", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException(string.IsNullOrWhiteSpace(status.ErrorMessage)
-                        ? "识谱失败，请尝试更清晰的旋律音频。"
-                        : status.ErrorMessage);
-                }
-
-                if (!string.Equals(status.Status, "succeeded", StringComparison.OrdinalIgnoreCase)
-                    || string.IsNullOrWhiteSpace(status.ScoreId))
-                {
-                    throw new InvalidOperationException("识谱任务仍在处理中，请稍后重试。");
-                }
-
-                var score = await _analysisApiClient.GetScoreAsync(status.ScoreId);
                 ApplyScore(score);
                 TxtTranscriptionStatus.Text = "识谱完成，当前正在展示双手钢琴谱预览。";
                 TxtFooterStatus.Text = "识谱完成，现在可以翻页预览并导出 PDF。";
@@ -166,24 +134,10 @@ namespace SeeMusicApp
 
         private void BtnPrevPage_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentScore == null || _currentScore.PreviewPages == null || _currentScore.PreviewPages.Count == 0)
-            {
-                return;
-            }
-
-            _currentPageIndex = Math.Max(1, _currentPageIndex - 1);
-            RenderCurrentPage();
         }
 
         private void BtnNextPage_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentScore == null || _currentScore.PreviewPages == null || _currentScore.PreviewPages.Count == 0)
-            {
-                return;
-            }
-
-            _currentPageIndex = Math.Min(_currentScore.PreviewPages.Count, _currentPageIndex + 1);
-            RenderCurrentPage();
         }
 
         private async void BtnRefreshClear_Click(object sender, RoutedEventArgs e)
@@ -195,15 +149,95 @@ namespace SeeMusicApp
             await RefreshHealthAsync();
         }
 
-        private void BtnExportPdf_Click(object sender, RoutedEventArgs e)
+        private async void BtnExportPdf_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentScore == null || _currentScore.PreviewPages == null || _currentScore.PreviewPages.Count == 0)
+            if (_currentScore == null || string.IsNullOrWhiteSpace(_currentScore.MusicXmlContent))
             {
-                MessageBox.Show("请先完成一次识谱，生成可预览的钢琴谱后再导出 PDF。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("请先完成一次识谱，生成乐谱后再导出 PDF。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            PrintScoreDocument();
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "导出 PDF",
+                Filter = "PDF 文件 (*.pdf)|*.pdf|所有文件 (*.*)|*.*",
+                FileName = string.IsNullOrWhiteSpace(_currentScore.Title) ? "钢琴谱" : _currentScore.Title,
+                DefaultExt = ".pdf"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            SetBusy(true);
+            try
+            {
+                await ScorePreviewBrowser.EnsureCoreWebView2Async();
+
+                var tcs = new TaskCompletionSource<bool>();
+                EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs> handler = null;
+                handler = (s, _) =>
+                {
+                    ScorePreviewBrowser.NavigationCompleted -= handler;
+                    tcs.TrySetResult(true);
+                };
+                ScorePreviewBrowser.NavigationCompleted += handler;
+                ScorePreviewBrowser.NavigateToString(BuildMusicXmlPrintHtml(_currentScore.MusicXmlContent, _currentScore.Title));
+                await tcs.Task;
+
+                for (var attempt = 0; attempt < 50; attempt++)
+                {
+                    await Task.Delay(300);
+                    var ready = await ScorePreviewBrowser.ExecuteScriptAsync("window.osmdReady ? 'yes' : 'no'");
+                    if (ready == "\"yes\"") break;
+                }
+
+                await ScorePreviewBrowser.CoreWebView2.PrintToPdfAsync(dialog.FileName);
+
+                RenderCurrentPage();
+                MessageBox.Show("PDF 已保存到：\n" + dialog.FileName, "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show("PDF 导出失败：" + exception.Message, "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        }
+
+        private void BtnExportMusicXml_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentScore == null || string.IsNullOrWhiteSpace(_currentScore.MusicXmlContent))
+            {
+                MessageBox.Show("请先完成一次识谱，生成 MusicXML 后再导出。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "导出 MusicXML",
+                Filter = "MusicXML 文件 (*.xml)|*.xml|所有文件 (*.*)|*.*",
+                FileName = string.IsNullOrWhiteSpace(_currentScore.Title) ? "钢琴谱" : _currentScore.Title,
+                DefaultExt = ".xml"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            try
+            {
+                System.IO.File.WriteAllText(dialog.FileName, _currentScore.MusicXmlContent, System.Text.Encoding.UTF8);
+                MessageBox.Show("MusicXML 已导出，可用 MuseScore 等软件打开查看完整谱面。", "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show("导出失败：" + exception.Message, "SeeMusic", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private async Task<bool> RefreshHealthAsync()
@@ -255,13 +289,12 @@ namespace SeeMusicApp
             BtnChooseAudio.IsEnabled = !_isBusy;
             BtnRefreshClear.IsEnabled = !_isBusy;
 
-            var hasPreview = _currentScore != null
-                && _currentScore.PreviewPages != null
-                && _currentScore.PreviewPages.Count > 0;
+            var hasScore = _currentScore != null && !string.IsNullOrWhiteSpace(_currentScore.MusicXmlContent);
 
-            BtnPrevPage.IsEnabled = !_isBusy && hasPreview && _currentPageIndex > 1;
-            BtnNextPage.IsEnabled = !_isBusy && hasPreview && _currentPageIndex < _currentScore.PreviewPages.Count;
-            BtnExportPdf.IsEnabled = !_isBusy && hasPreview;
+            BtnPrevPage.IsEnabled = false;
+            BtnNextPage.IsEnabled = false;
+            BtnExportPdf.IsEnabled = !_isBusy && hasScore;
+            BtnExportMusicXml.IsEnabled = !_isBusy && hasScore;
         }
 
         private void UpdateStatusFromJob(TranscriptionStatusResponse status, string fallbackMessage)
@@ -329,8 +362,8 @@ namespace SeeMusicApp
             TxtScoreSubtitle.Text = "右侧结果会按连续卡片工作台展开，先看谱面，再继续查看轨道构建、结构与双手分配。";
             TxtHeroProjectTitle.Text = GetProjectDisplayTitle();
             TxtHeroDescription.Text = "音频已经准备完成，点击“生成双手钢琴谱”后，工作台会从谱面预览一路串联到轨道构建、结构和双手分配结果。";
-            TxtHeroViewerChip.Text = "支持分页与 PDF 导出";
-            TxtPreviewCardHint.Text = "当前预览区正在等待本次识谱结果，生成完成后会自动切换到 SVG 纸面谱面浏览。";
+            TxtHeroViewerChip.Text = "支持 MusicXML 标准渲染与 PDF 导出";
+            TxtPreviewCardHint.Text = "当前预览区正在等待本次识谱结果，生成完成后会以 MusicXML 标准格式渲染谱面。";
         }
 
         private void ApplyProcessingState(string message, TranscriptionStatusResponse status = null)
@@ -346,7 +379,7 @@ namespace SeeMusicApp
                 ? FormatPageChip(status.EstimatedPageCount.Value)
                 : "预计 -- 页";
             TxtHeroViewerChip.Text = "结果返回后支持分页预览";
-            TxtPreviewCardHint.Text = "系统正在生成 MusicXML 与 SVG 预览，成功后会直接在这里显示当前谱面。";
+            TxtPreviewCardHint.Text = "系统正在生成 MusicXML，识谱完成后将以标准格式在这里渲染谱面。";
 
             TxtTempo.Text = status != null && status.DetectedTempoBpm.HasValue ? FormatTempo(status.DetectedTempoBpm) : "--";
             TxtMeter.Text = status != null ? FormatMeter(status.DetectedTimeSignature) : "--/--";
@@ -559,107 +592,86 @@ namespace SeeMusicApp
 
         private void RenderCurrentPage()
         {
-            if (_currentScore == null || _currentScore.PreviewPages == null || _currentScore.PreviewPages.Count == 0)
+            if (_currentScore == null || string.IsNullOrWhiteSpace(_currentScore.MusicXmlContent))
             {
-                ScorePreviewBrowser.NavigateToString(BuildEmptyPreviewHtml());
+                NavigatePreviewToHtml(BuildEmptyPreviewHtml());
                 TxtPageIndicator.Text = "第 1 / 1 页";
                 UpdateActionStates();
                 return;
             }
 
-            _currentPageIndex = Math.Max(1, Math.Min(_currentPageIndex, _currentScore.PreviewPages.Count));
-            var page = _currentScore.PreviewPages[_currentPageIndex - 1];
-            ScorePreviewBrowser.NavigateToString(BuildPreviewHtml(page.SvgContent, _currentScore.Title, _currentPageIndex, _currentScore.PreviewPages.Count));
-            TxtPageIndicator.Text = string.Format("第 {0} / {1} 页", _currentPageIndex, _currentScore.PreviewPages.Count);
+            NavigatePreviewToHtml(BuildMusicXmlPreviewHtml(_currentScore.MusicXmlContent, _currentScore.Title));
+            TxtPageIndicator.Text = "全谱预览";
             UpdateActionStates();
         }
 
-        private void PrintScoreDocument()
-        {
-            var printWindow = new Window
-            {
-                Width = 1,
-                Height = 1,
-                Left = -10000,
-                Top = -10000,
-                ShowInTaskbar = false,
-                WindowStyle = WindowStyle.None,
-                AllowsTransparency = true,
-                Background = Brushes.Transparent
-            };
-
-            var browser = new WebBrowser();
-            System.Windows.Navigation.LoadCompletedEventHandler handler = null;
-            handler = (sender, args) =>
-            {
-                browser.LoadCompleted -= handler;
-                try
-                {
-                    InvokeBrowserPrint(browser);
-                }
-                finally
-                {
-                    printWindow.Close();
-                }
-            };
-
-            browser.LoadCompleted += handler;
-            printWindow.Content = browser;
-            printWindow.Show();
-            browser.NavigateToString(BuildPrintHtml());
-        }
-
-        private static void InvokeBrowserPrint(WebBrowser browser)
+        private async void NavigatePreviewToHtml(string html)
         {
             try
             {
-                var activeX = browser.GetType().InvokeMember(
-                    "ActiveXInstance",
-                    BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
-                    null,
-                    browser,
-                    new object[] { });
-                activeX.GetType().InvokeMember("ExecWB", BindingFlags.InvokeMethod, null, activeX, new object[] { 6, 1 });
+                await ScorePreviewBrowser.EnsureCoreWebView2Async();
+                ScorePreviewBrowser.NavigateToString(html);
             }
-            catch
-            {
-            }
+            catch { }
         }
 
-        private string BuildPrintHtml()
+        private static string BuildMusicXmlPreviewHtml(string musicXmlContent, string title)
         {
-            var builder = new StringBuilder();
-            builder.AppendLine("<html><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=11\"/>");
-            builder.AppendLine("<style>");
-            builder.AppendLine("body{margin:0;padding:24px;background:#f4f7fb;font-family:'Segoe UI';}");
-            builder.AppendLine(".page{width:1040px;margin:0 auto 26px auto;padding:18px;background:white;page-break-after:always;}");
-            builder.AppendLine(".page:last-child{page-break-after:auto;}");
-            builder.AppendLine("</style></head><body>");
-
-            foreach (var page in _currentScore.PreviewPages)
-            {
-                builder.AppendLine("<div class=\"page\">");
-                builder.AppendLine(page.SvgContent);
-                builder.AppendLine("</div>");
-            }
-
-            builder.AppendLine("</body></html>");
-            return builder.ToString();
+            var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(musicXmlContent ?? string.Empty));
+            var escapedTitle = EscapeHtml(string.IsNullOrWhiteSpace(title) ? "钢琴双手谱" : title);
+            return
+                "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>" +
+                "<style>" +
+                "html,body{margin:0;padding:10px 12px 20px 12px;background:#F7FBFF;font-family:'Segoe UI',sans-serif;}" +
+                ".meta{color:#71809B;font-size:13px;padding:4px 0 14px 4px;}" +
+                "#container{background:white;box-shadow:0 4px 24px rgba(44,72,104,0.08);padding:8px;}" +
+                ".error{padding:24px 32px;color:#c00;}" +
+                "</style>" +
+                "<script src=\"https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.9/build/opensheetmusicdisplay.min.js\"></script>" +
+                "</head><body>" +
+                "<div class=\"meta\">" + escapedTitle + " &middot; MusicXML 标准谱面</div>" +
+                "<div id=\"container\"></div>" +
+                "<script>" +
+                "var b64='" + base64 + "';" +
+                "var bytes=Uint8Array.from(atob(b64),function(c){return c.charCodeAt(0);});" +
+                "var xml=new TextDecoder('utf-8').decode(bytes);" +
+                "window.osmdReady=false;" +
+                "var osmd=new opensheetmusicdisplay.OpenSheetMusicDisplay('container',{" +
+                "autoResize:true,drawTitle:true,backend:'svg',pageFormat:'A4_P',pageBackgroundColor:'#FFFFFF'" +
+                "});" +
+                "osmd.load(xml).then(function(){osmd.render();window.osmdReady=true;})" +
+                ".catch(function(e){document.getElementById('container').innerHTML='<div class=\"error\">谱面渲染失败：'+e+'</div>';window.osmdReady=true;});" +
+                "</script></body></html>";
         }
 
-        private static string BuildPreviewHtml(string svgContent, string title, int pageIndex, int totalPages)
+        private static string BuildMusicXmlPrintHtml(string musicXmlContent, string title)
         {
-            return string.Format(
-                "<html><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=11\"/><style>body{{margin:0;background:#F7FBFF;font-family:'Segoe UI';}}.wrap{{padding:12px 10px 20px 10px;}}.meta{{padding:6px 10px 16px 18px;color:#71809B;font-size:13px;}}svg{{display:block;margin:0 auto;box-shadow:0 22px 60px rgba(44,72,104,0.08);background:white;}}</style></head><body><div class='wrap'><div class='meta'>{0} · 第 {1} / {2} 页</div>{3}</div></body></html>",
-                EscapeHtml(string.IsNullOrWhiteSpace(title) ? "钢琴双手谱预览" : title),
-                pageIndex,
-                totalPages,
-                svgContent ?? string.Empty);
+            var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(musicXmlContent ?? string.Empty));
+            return
+                "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>" +
+                "<style>" +
+                "html,body{margin:0;padding:16px;background:white;font-family:'Segoe UI',sans-serif;}" +
+                "@media print{body{padding:0;}}" +
+                "</style>" +
+                "<script src=\"https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.9/build/opensheetmusicdisplay.min.js\"></script>" +
+                "</head><body>" +
+                "<div id=\"container\"></div>" +
+                "<script>" +
+                "var b64='" + base64 + "';" +
+                "var bytes=Uint8Array.from(atob(b64),function(c){return c.charCodeAt(0);});" +
+                "var xml=new TextDecoder('utf-8').decode(bytes);" +
+                "window.osmdReady=false;" +
+                "var osmd=new opensheetmusicdisplay.OpenSheetMusicDisplay('container',{" +
+                "autoResize:false,drawTitle:true,backend:'svg',pageFormat:'A4_P',pageBackgroundColor:'#FFFFFF'" +
+                "});" +
+                "osmd.load(xml).then(function(){osmd.render();window.osmdReady=true;})" +
+                ".catch(function(e){window.osmdReady=true;});" +
+                "</script></body></html>";
         }
 
         private static string BuildEmptyPreviewHtml()
         {
-            return "<html><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=11\"/><style>body{margin:0;background:#F7FBFF;font-family:'Segoe UI';display:flex;align-items:center;justify-content:center;height:100%;color:#8A98AE;} .box{padding:24px 32px;border:1px dashed #D3DFEB;border-radius:20px;background:white;}</style></head><body><div class='box'>完成一次识谱后，这里会展示只读钢琴谱预览。</div></body></html>";
+            return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><style>html,body{height:100%;margin:0;background:#F7FBFF;font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;} .box{padding:24px 32px;border:1px dashed #D3DFEB;border-radius:20px;background:white;color:#8A98AE;}</style></head><body><div class='box'>完成一次识谱后，这里会展示只读钢琴谱预览。</div></body></html>";
         }
 
         private void ResetUiState()
@@ -691,7 +703,7 @@ namespace SeeMusicApp
             TxtScoreTitle.Text = "双手钢琴谱预览";
             TxtScoreSubtitle.Text = "右侧结果会按连续卡片工作台展开，先看谱面，再继续查看轨道构建、结构与双手分配。";
             TxtHeroProjectTitle.Text = GetProjectDisplayTitle();
-            TxtHeroDescription.Text = "选择音频并开始识谱后，这里会展示 MusicXML 结果、分页说明与 SVG 纸面预览。";
+            TxtHeroDescription.Text = "选择音频并开始识谱后，这里会展示 MusicXML 结果、分页说明与标准谱面预览。";
             TxtHeroMeasuresChip.Text = "共 -- 小节";
             TxtHeroPagesChip.Text = "预计 -- 页";
             TxtHeroViewerChip.Text = "支持分页与 PDF 导出";
@@ -731,7 +743,7 @@ namespace SeeMusicApp
                 return score.EstimatedPageCount;
             }
 
-            return score.PreviewPages == null ? 0 : score.PreviewPages.Count;
+            return 0;
         }
 
         private static string FormatTempo(double? tempo)
@@ -766,9 +778,7 @@ namespace SeeMusicApp
 
         private static string BuildHeroDescription(ScoreDetailResponse score)
         {
-            var previewText = string.Equals(score.PreviewRenderMode, "generated_svg_projection", StringComparison.OrdinalIgnoreCase)
-                ? "当前谱面预览采用后端 SVG 纸面投影"
-                : "当前谱面预览已经生成";
+            var previewText = "当前谱面已以 MusicXML 标准格式渲染";
             var keyConfidenceText = score.KeyConfidence.HasValue
                 ? string.Format("，调性识别置信度约 {0}", FormatPercentage(score.KeyConfidence.Value))
                 : string.Empty;
@@ -777,19 +787,12 @@ namespace SeeMusicApp
 
         private static string BuildPreviewHint(ScoreDetailResponse score)
         {
-            if (string.Equals(score.PreviewRenderMode, "generated_svg_projection", StringComparison.OrdinalIgnoreCase))
-            {
-                return "当前预览采用后端 SVG 纸面投影；MusicXML 结果、分页摘要与 PDF 导出会围绕同一份识谱结果同步更新。";
-            }
-
-            return "当前页面固定展示带左手伴奏的双手钢琴谱，翻页、预览和 PDF 导出会使用同一份结果。";
+            return "当前预览采用 MusicXML 标准格式渲染，PDF 导出与 MusicXML 导出均使用同一份识谱结果。";
         }
 
         private static string BuildViewerChip(string previewRenderMode)
         {
-            return string.Equals(previewRenderMode, "generated_svg_projection", StringComparison.OrdinalIgnoreCase)
-                ? "当前预览采用 SVG 纸面投影"
-                : "支持分页与 PDF 导出";
+            return "MusicXML 标准谱面渲染";
         }
 
         private static IEnumerable<string> BuildResultInsights(ScoreDetailResponse score)

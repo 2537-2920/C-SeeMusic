@@ -58,6 +58,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.WebHost.ConfigureKestrel(opts =>
+    opts.Limits.MaxRequestBodySize = 500_000_000); // 500 MB
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

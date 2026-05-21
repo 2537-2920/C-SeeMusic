@@ -25,9 +25,20 @@ public class MediaController : ControllerBase
         if (file == null || file.Length == 0)
             return BadRequest(new ApiResponse<MediaUploadResponse> { Code = 40001, Message = "file required" });
 
-        var userId = TryGetCurrentUserId();
-        var result = await _mediaService.UploadAsync(file, type, userId);
-        return Ok(new ApiResponse<MediaUploadResponse> { Data = result });
+        try
+        {
+            var userId = TryGetCurrentUserId();
+            var result = await _mediaService.UploadAsync(file, type, userId);
+            return Ok(new ApiResponse<MediaUploadResponse> { Data = result });
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(new ApiResponse<MediaUploadResponse> { Code = 40001, Message = exception.Message });
+        }
+        catch (Exception exception)
+        {
+            return StatusCode(500, new ApiResponse<MediaUploadResponse> { Code = 50000, Message = exception.Message });
+        }
     }
 
     private int TryGetCurrentUserId()
