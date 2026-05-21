@@ -16,16 +16,16 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public ActionResult<ApiResponse<UserDto>> Register([FromBody] RegisterRequest request)
+    public ActionResult<ApiResponse<RegisterResponse>> Register([FromBody] RegisterRequest request)
     {
         try
         {
-            var user = _userService.Register(request.Username, request.Email, request.Password);
-            return Ok(new ApiResponse<UserDto> { Data = user });
+            var user = _userService.Register(request.Username, request.Email, request.Password, request.ConfirmPassword);
+            return Ok(new ApiResponse<RegisterResponse> { Data = user });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new ApiResponse<UserDto> { Code = 40001, Message = ex.Message });
+            return BadRequest(new ApiResponse<RegisterResponse> { Code = 40001, Message = ex.Message });
         }
     }
 
@@ -60,6 +60,23 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public ActionResult<ApiResponse<string>> Logout()
     {
-        return Ok(new ApiResponse<string> { Data = "ok" });
+        try
+        {
+            var userIdClaim = User.FindFirst("userId");
+            if (userIdClaim != null)
+            {
+                var userId = int.Parse(userIdClaim.Value);
+                _userService.Logout(userId);
+                return Ok(new ApiResponse<string> { Data = "登出成功" });
+            }
+            else
+            {
+                return BadRequest(new ApiResponse<string> { Code = 40001, Message = "未找到用户信息" });
+            }
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<string> { Code = 40001, Message = ex.Message });
+        }
     }
 }

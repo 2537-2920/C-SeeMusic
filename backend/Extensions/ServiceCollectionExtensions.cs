@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAnonymousEvaluationAccessTokenService, AnonymousEvaluationAccessTokenService>();
         services.AddHostedService<TranscriptionWorker>();
         services.AddHostedService<EvaluationWorker>();
+        services.AddScoped<ICommunityService, CommunityService>();
         return services;
     }
 }

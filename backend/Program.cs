@@ -34,7 +34,8 @@ var databaseEnabled = IsDatabaseEnabled(connectionString);
 if (databaseEnabled)
 {
     builder.Services.AddDbContext<SeeMusicDbContext>(options =>
-        options.UseMySql(connectionString!, ServerVersion.AutoDetect(connectionString!))
+        options.UseMySql(connectionString!, ServerVersion.AutoDetect(connectionString!),
+            mysqlOptions => mysqlOptions.EnableRetryOnFailure())
     );
 }
 
@@ -61,6 +62,16 @@ builder.Services.AddAuthentication(options =>
 builder.WebHost.ConfigureKestrel(opts =>
     opts.Limits.MaxRequestBodySize = 500_000_000); // 500 MB
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -80,33 +91,66 @@ var app = builder.Build();
 if (databaseEnabled)
 {
     using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<SeeMusicDbContext>();
-    if (context.Database.GetMigrations().Any())
+    try
     {
-        context.Database.Migrate();
+        var context = scope.ServiceProvider.GetRequiredService<SeeMusicDbContext>();
+        Console.WriteLine("--> [DB] Attempting to connect and migrate...");
+        if (context.Database.GetMigrations().Any())
+        {
+            context.Database.Migrate();
+            Console.WriteLine("--> [DB] Migration successful.");
+        }
+        else
+        {
+            context.Database.EnsureCreated();
+        }
     }
-    else
+    catch (Exception ex)
     {
-        context.Database.EnsureCreated();
+        Console.WriteLine($"--> [DB ERROR] Migration failed: {ex.Message}");
     }
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// 无论什么模式都开启 Swagger，方便调试
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
-var uploadsDirectory = Path.Combine(app.Environment.ContentRootPath, "uploads");
-Directory.CreateDirectory(uploadsDirectory);
-app.UseStaticFiles(new StaticFileOptions
+app.UseStaticFiles();
+
+var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+Directory.CreateDirectory(uploadsDir);
+
+app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(uploadsDirectory),
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
     RequestPath = "/uploads"
 });
+
+// 禁用 HTTPS 重定向，避免本地证书引发的连接失败
+// app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("\n" + new string('!', 50));
+        Console.WriteLine($"[GLOBAL ERROR] {DateTime.Now}");
+        Console.WriteLine($"Path: {context.Request.Path}");
+        Console.WriteLine($"Error: {ex.Message}");
+        if (ex.InnerException != null) Console.WriteLine($"Inner: {ex.InnerException.Message}");
+        Console.WriteLine(new string('!', 50) + "\n");
+        throw;
+    }
+});
+
 app.MapControllers();
 
 app.Run();

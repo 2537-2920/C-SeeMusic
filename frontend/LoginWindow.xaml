@@ -1,4 +1,4 @@
-﻿<Window x:Class="SeeMusicApp.LoginWindow"
+<Window x:Class="SeeMusicApp.LoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="登录 - SeeMusic" Height="768" Width="1024"
@@ -139,20 +139,28 @@
 
                         <TextBlock Text="用户名" FontSize="12" FontWeight="Bold" Foreground="#888" Margin="5,0,0,5"/>
                         <Grid Margin="0,0,0,15">
-                            <TextBox Style="{StaticResource InputBoxStyle}"/>
+                            <TextBox x:Name="TxtAccount" Style="{StaticResource InputBoxStyle}"/>
                             <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA" FontSize="16" VerticalAlignment="Center" Margin="15,0,0,0"/>
                         </Grid>
 
+                        <StackPanel x:Name="EmailPanel" Visibility="Collapsed">
+                            <TextBlock Text="电子邮箱" FontSize="12" FontWeight="Bold" Foreground="#888" Margin="5,0,0,5"/>
+                            <Grid Margin="0,0,0,15">
+                                <TextBox x:Name="TxtEmail" Style="{StaticResource InputBoxStyle}"/>
+                                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA" FontSize="16" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+
                         <TextBlock Text="密码" FontSize="12" FontWeight="Bold" Foreground="#888" Margin="5,0,0,5"/>
                         <Grid Margin="0,0,0,15">
-                            <PasswordBox Style="{StaticResource InputBoxStyle}"/>
+                            <PasswordBox x:Name="PbPassword" Style="{StaticResource InputBoxStyle}"/>
                             <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA" FontSize="16" VerticalAlignment="Center" Margin="15,0,0,0"/>
                         </Grid>
 
                         <StackPanel x:Name="ConfirmPwdPanel" Visibility="Collapsed">
                             <TextBlock Text="确认密码" FontSize="12" FontWeight="Bold" Foreground="#888" Margin="5,0,0,5"/>
                             <Grid Margin="0,0,0,15">
-                                <PasswordBox Style="{StaticResource InputBoxStyle}"/>
+                                <PasswordBox x:Name="PbConfirmPassword" Style="{StaticResource InputBoxStyle}"/>
                                 <TextBlock Text="&#xE73A;" FontFamily="Segoe MDL2 Assets" Foreground="#AAA" FontSize="16" VerticalAlignment="Center" Margin="15,0,0,0"/>
                             </Grid>
                         </StackPanel>

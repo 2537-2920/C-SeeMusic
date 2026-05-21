@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace backend.Models;
 
 public sealed class User
@@ -11,6 +14,22 @@ public sealed class User
     public string Bio { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastLoginAt { get; set; } = DateTime.UtcNow;
+    public string Status { get; set; } = string.Empty;
+
+    // Navigation properties
+    public UserPreferences? Preferences { get; set; }
+}
+
+public sealed class UserPreferences
+{
+    public int UserId { get; set; }
+    public string Theme { get; set; } = "default";
+    public string DefaultExportFormats { get; set; } = "midi,musicxml";
+    public bool SyncEnabled { get; set; } = true;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public User? User { get; set; }
 }
 
 public sealed class RefreshToken
@@ -37,6 +56,91 @@ public sealed class MediaFile
     public string PreparedAudioStatus { get; set; } = "pending";
     public string? PreparedAudioPath { get; set; }
     public string? PreparationErrorMessage { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class Score
+{
+    public int Id { get; set; }
+    public string ScoreId { get; set; } = Guid.NewGuid().ToString("N");
+    public int? UserId { get; set; }
+    public int OwnerUserId { get; set; }
+    public int SourceMediaFileId { get; set; }
+    public int? CoverMediaFileId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? ArtistName { get; set; }
+    public string? ArrangementTag { get; set; }
+    public string? Description { get; set; }
+    public string InstrumentMode { get; set; } = "piano";
+    public string Status { get; set; } = "published";
+    public string? SourceType { get; set; } = "audio";
+    public bool IsPublic { get; set; } = true;
+    public int PriceCent { get; set; } = 0;
+    public int DownloadCount { get; set; } = 0;
+    public int FavoriteCount { get; set; } = 0;
+    public int CommentCount { get; set; } = 0;
+    public double? TempoBpm { get; set; }
+    public string TimeSignature { get; set; } = "4/4";
+    public string KeySignature { get; set; } = "C";
+    public int MeasureCount { get; set; } = 0;
+    public int EstimatedPageCount { get; set; } = 0;
+    public string MusicXmlContent { get; set; } = "{}";
+    public string AnalysisSummaryJson { get; set; } = "{}";
+    public string WarningMessagesJson { get; set; } = "[]";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? PublishedAt { get; set; }
+
+    // Navigation properties
+    public User? Owner { get; set; }
+    public MediaFile? CoverMediaFile { get; set; }
+    public MediaFile? SourceMediaFile { get; set; }
+    public ICollection<ScoreCategoryRelation> CategoryRelations { get; set; } = new List<ScoreCategoryRelation>();
+    public ICollection<ScoreComment> Comments { get; set; } = new List<ScoreComment>();
+}
+
+public sealed class ScoreCategory
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public int SortOrder { get; set; } = 0;
+}
+
+public sealed class ScoreCategoryRelation
+{
+    public int ScoreDbId { get; set; }
+    public int CategoryId { get; set; }
+    public Score? Score { get; set; }
+    public ScoreCategory? Category { get; set; }
+}
+
+public sealed class ScoreComment
+{
+    public int Id { get; set; }
+    public int ScoreDbId { get; set; }
+    public int UserId { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public string Status { get; set; } = "visible";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public User? User { get; set; }
+}
+
+public sealed class ScoreFavorite
+{
+    public int UserId { get; set; }
+    public int ScoreDbId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class ScoreDownload
+{
+    public int Id { get; set; }
+    public int ScoreDbId { get; set; }
+    public int UserId { get; set; }
+    public string? SourceIp { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
@@ -107,27 +211,6 @@ public sealed class EvaluationExport
     public string ExportType { get; set; } = "pdf";
     public int CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-}
-
-public sealed class Score
-{
-    public int Id { get; set; }
-    public string ScoreId { get; set; } = string.Empty;
-    public int? UserId { get; set; }
-    public int SourceMediaFileId { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string InstrumentMode { get; set; } = "piano";
-    public string Status { get; set; } = "processing";
-    public double? TempoBpm { get; set; }
-    public string TimeSignature { get; set; } = "4/4";
-    public string KeySignature { get; set; } = "C";
-    public int MeasureCount { get; set; }
-    public int EstimatedPageCount { get; set; }
-    public string MusicXmlContent { get; set; } = string.Empty;
-    public string AnalysisSummaryJson { get; set; } = "{}";
-    public string WarningMessagesJson { get; set; } = "[]";
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public sealed class ScoreTrack

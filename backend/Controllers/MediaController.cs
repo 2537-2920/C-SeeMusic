@@ -19,16 +19,15 @@ public class MediaController : ControllerBase
     }
 
     [HttpPost("upload")]
-    [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<MediaUploadResponse>>> Upload([FromForm] IFormFile file, [FromForm] string type)
+    public async Task<ActionResult<ApiResponse<MediaUploadResponse>>> Upload([FromForm] MediaUploadRequest request)
     {
-        if (file == null || file.Length == 0)
+        if (request.File == null || request.File.Length == 0)
             return BadRequest(new ApiResponse<MediaUploadResponse> { Code = 40001, Message = "file required" });
 
         try
         {
             var userId = TryGetCurrentUserId();
-            var result = await _mediaService.UploadAsync(file, type, userId);
+            var result = await _mediaService.UploadAsync(request.File, request.Type, userId);
             return Ok(new ApiResponse<MediaUploadResponse> { Data = result });
         }
         catch (InvalidOperationException exception)

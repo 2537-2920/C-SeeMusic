@@ -1,0 +1,229 @@
+<Window x:Class="SeeMusicApp.UploadScoreWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="分享您的乐谱" Height="750" Width="500"
+        WindowStartupLocation="CenterOwner" Background="White"
+        WindowStyle="None" AllowsTransparency="True"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Window.Resources>
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="Padding" Value="15,12"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#457b9d"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#457b9d"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Padding" Value="25,12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="16">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Premium Modern ComboBox Style -->
+        <Style x:Key="ModernComboBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1.2"/>
+            <Setter Property="Padding" Value="15,0,0,0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter x:Name="contentPresenter" Grid.Column="0" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" Margin="{TemplateBinding Padding}" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                                    <ToggleButton Grid.Column="0" Grid.ColumnSpan="2" Background="Transparent" BorderThickness="0" Focusable="false" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="Transparent">
+                                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#94A3B8" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="PART_Popup" AllowsTransparency="true" Grid.ColumnSpan="2" Placement="Bottom" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}" PopupAnimation="Slide">
+                                <Border x:Name="dropDownBorder" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="12" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,4,0,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="15" Color="Black" Opacity="0.06" ShadowDepth="3"/>
+                                    </Border.Effect>
+                                    <ScrollViewer x:Name="Templatesable" CanContentScroll="true" VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="false">
+                                <Setter TargetName="dropDownBorder" Property="Height" Value="95"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#457b9d"/>
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#457b9d"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Premium Modern ComboBoxItem Style -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Padding" Value="15,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#1E293B"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="itemBorder" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="8" Margin="4,2">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="itemBorder" Property="Background" Value="#F1F5F9"/>
+                                <Setter Property="Foreground" Value="#457b9d"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="itemBorder" Property="Background" Value="#457b9d"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="32" Background="White" BorderBrush="#F1F5F9" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="40" Color="Black" Opacity="0.1" ShadowDepth="0"/>
+        </Border.Effect>
+        <Grid Margin="30">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,25">
+                <StackPanel>
+                    <TextBlock Text="分享您的乐谱" FontSize="24" FontWeight="Bold" Foreground="#1E293B"/>
+                    <TextBlock Text="让全世界都能听到您的创作" FontSize="14" Foreground="#94A3B8" Margin="0,5,0,0"/>
+                </StackPanel>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top" Background="Transparent" BorderThickness="0" Cursor="Hand" Click="BtnClose_Click">
+                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="#CBD5E1"/>
+                </Button>
+            </Grid>
+
+            <!-- Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden">
+                <StackPanel>
+                    <!-- Cover Selection -->
+                    <TextBlock Text="乐谱封面 (可选)" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,12"/>
+                    <Border x:Name="CoverPreview" Width="180" Height="200" HorizontalAlignment="Left" CornerRadius="16" BorderBrush="#E2E8F0" BorderThickness="1.5" Background="White" Margin="0,0,0,25" Cursor="Hand" MouseLeftButtonDown="BtnChangeCover_Click" ClipToBounds="True">
+                        <Grid>
+                            <Image x:Name="ImgCover" Stretch="UniformToFill"/>
+                            <StackPanel x:Name="PlaceholderIcon" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Border Width="44" Height="44" Background="#F8FAFC" CornerRadius="22" Margin="0,0,0,10">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="8" Opacity="0.03" ShadowDepth="1"/>
+                                    </Border.Effect>
+                                    <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#457b9d" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="点击上传封面" FontSize="13" FontWeight="SemiBold" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                <TextBlock Text="比例 9:10" FontSize="11" Foreground="#94A3B8" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Title -->
+                    <TextBlock Text="乐谱标题" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
+                    <TextBox x:Name="TxtTitle" Style="{StaticResource ModernTextBox}" Tag="输入乐谱名称..." Margin="0,0,0,20"/>
+
+                    <!-- Artist -->
+                    <TextBlock Text="艺术家/原著" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
+                    <TextBox x:Name="TxtArtist" Style="{StaticResource ModernTextBox}" Tag="作者姓名..." Margin="0,0,0,20"/>
+
+                    <!-- Category & Price -->
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="分类" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
+                            <ComboBox x:Name="ComboCategory" Style="{StaticResource ModernComboBox}" Height="48">
+                                <ComboBoxItem Content="流行" IsSelected="True"/>
+                                <ComboBoxItem Content="古典"/>
+                                <ComboBoxItem Content="爵士"/>
+                                <ComboBoxItem Content="ACG"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="价格（填0即为免费）" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
+                            <TextBox x:Name="TxtPrice" Style="{StaticResource ModernTextBox}" Text="0" Height="48"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- File Selection -->
+                    <TextBlock Text="乐谱文件" FontWeight="SemiBold" FontSize="14" Foreground="#64748B" Margin="0,0,0,10"/>
+                    <Border x:Name="FileDropZone" Height="80" CornerRadius="16" BorderBrush="#E2E8F0" BorderThickness="2" Background="#F8FAFC" Margin="0,0,0,30" Cursor="Hand" MouseLeftButtonDown="BtnSelectFile_Click">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtFileName" Text="点击选择乐谱文件 (PDF/MIDI...)" Foreground="#94A3B8" FontSize="14"/>
+                            <TextBlock x:Name="IconFileReady" Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" Foreground="#22C55E" FontSize="18" Margin="10,0,0,0" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Actions -->
+            <Grid Grid.Row="2" Margin="0,20,0,0">
+                <Button Content="确认发布" Style="{StaticResource ActionButton}" HorizontalAlignment="Stretch" Click="BtnSubmit_Click"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

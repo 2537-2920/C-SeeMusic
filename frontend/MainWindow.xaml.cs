@@ -1,13 +1,16 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using Newtonsoft.Json;
 namespace SeeMusicApp
 {
     public partial class MainWindow : Window
     {
+        private readonly ApiClient _apiClient = new ApiClient();
+
         // 1. 真正的无参构造函数（WPF App.xaml 启动程序时必须依赖它！）
         public MainWindow()
         {
@@ -18,10 +21,24 @@ namespace SeeMusicApp
         }
 
         // 2. 带参数的重载构造函数（供我们从登录界面跳回来时调用）
-        // 注意这里的 : this()，它表示在执行下面代码前，会先去执行上面那个无参构造函数
         public MainWindow(bool isLoggedIn) : this()
         {
-            // 如果传入 true，则直接展示已登录的四大金刚卡片
+            ApplyLoginState(isLoggedIn);
+        }
+
+        public MainWindow(bool isLoggedIn, LoginResponse loginResponse) : this()
+        {
+            ApplyLoginState(isLoggedIn);
+            // 这里可以进一步使用 loginResponse 里的用户信息，例如显示头像、用户名等
+            if (loginResponse?.User != null)
+            {
+                // 示例：给用户打个招呼
+                // MessageBox.Show($"欢迎回来, {loginResponse.User.DisplayName}");
+            }
+        }
+
+        private void ApplyLoginState(bool isLoggedIn)
+        {
             if (isLoggedIn)
             {
                 LoggedOutView.Visibility = Visibility.Collapsed;
@@ -153,14 +170,35 @@ namespace SeeMusicApp
         }
 
         // 2. 右上角关闭按钮
-        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        private async void BtnClose_Click(object sender, RoutedEventArgs e)
         {
+            // 关闭前先调用登出接口
+            if (!string.IsNullOrEmpty(ApiClient.AccessToken))
+            {
+                try
+                {
+                    await _apiClient.LogoutAsync();
+                }
+                catch { /* 忽略错误 */ }
+            }
+
             Application.Current.Shutdown();
         }
 
         // 3. 切换至未登录状态
-        private void BtnMockOut_Click(object sender, RoutedEventArgs e)
+        private async void BtnMockOut_Click(object sender, RoutedEventArgs e)
         {
+            // 调用后端登出接口
+            try
+            {
+                await _apiClient.LogoutAsync();
+            }
+            catch { /* 忽略错误 */ }
+
+            // 清除本地 Token
+            ApiClient.AccessToken = null;
+
+            // 切换 UI 到未登录状态
             LoggedOutView.Visibility = Visibility.Visible;
             LoggedInView.Visibility = Visibility.Collapsed;
 
